@@ -36,12 +36,42 @@ export class NetworkManager {
                     return;
                 }
 
-                // 兼容 Python 后端可能返回的 actionType 或 action_type 字段
                 const actionType = innerData.actionType || innerData.action_type;
 
+                // ==========================================
+                // 🌟 全局状态拦截器 (Global State Interceptor)
+                // 彻底解决场景切换、加载卡顿时导致的状态丢失问题！
+                // ==========================================
+                const stateStr = cc.sys.localStorage.getItem('currentGameState');
+                let currentState = stateStr ? JSON.parse(stateStr) : {};
+                let stateModified = false;
+
+                // 拦截 1：战局更新
+                if (actionType === 'gameStateUpdate' || serverEvent === 'gameStateUpdate') {
+                    const newData = innerData.gameState || innerData;
+                    Object.assign(currentState, newData);
+                    stateModified = true;
+                }
+                // 拦截 2：玩家资源更新
+                else if (serverEvent === 'playerResourceUpdate' || actionType === 'playerResourceUpdate') {
+                    if (currentState.players) {
+                        const targetPlayer = currentState.players.find((p: any) => p.id == innerData.playerId);
+                        if (targetPlayer) {
+                            Object.assign(targetPlayer, innerData.resources || innerData);
+                            stateModified = true;
+                        }
+                    }
+                }
+
+                // 不管场景在哪，强制写入最新状态
+                if (stateModified) {
+                    cc.sys.localStorage.setItem('currentGameState', JSON.stringify(currentState));
+                }
+                // ==========================================
+
+                // 继续向下派发事件给可能正在监听的 UI
                 if (actionType) {
                     const payload = innerData.data !== undefined ? innerData.data : innerData;
-                    // 使用 Python 定义的骆驼拼写法作为事件名派发（如 'roomCreated'）
                     this.eventTarget.emit(actionType, payload);
                 } else {
                     this.eventTarget.emit(serverEvent, innerData);
@@ -62,14 +92,13 @@ export class NetworkManager {
         };
     }
 
-    // 【核心修改】：同时兼容后端的两种命名习惯
     public send(eventName: string, actionString: string, data: any = {}) {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             const payload = {
                 event: eventName,
                 data: {
-                    action_type: actionString, // 迎合 room_action_handler 的胃口
-                    actionType: actionString,  // 迎合 game_action_handler 的胃口
+                    action_type: actionString,
+                    actionType: actionString,
                     ...data
                 }
             };

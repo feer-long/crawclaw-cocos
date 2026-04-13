@@ -20,18 +20,17 @@ export class GameView extends Component {
     @property(Node) public areaTribute: Node = null;
     @property(Node) public areaDowntown: Node = null;
 
-    // 绑定“结束回合”按钮
-    @property(Node)
-    public btnNextPlayer: Node = null;
+    @property(Node) public btnNextPlayer: Node = null;
 
     private localPlayerId: number = -1;
+    private currentTurnPlayerIndex: number = -1;
+    private currentTurnPhase: string = "";
+    private turnStartLiZhang: number = -1;
 
     onLoad() {
-        NetworkManager.instance.eventTarget.on('gameStateUpdate', this.onGameStateUpdate, this);
-        NetworkManager.instance.eventTarget.on('playerResourceUpdate', this.onPlayerResourceUpdate, this);
-        NetworkManager.instance.eventTarget.on('serverGameAction', this.onGameStateUpdate, this);
-
-        // 【新增】：监听服务器的拒绝操作（比如玩家想在一回合放两个里长）
+        NetworkManager.instance.eventTarget.on('gameStateUpdate', this.onStateChanged, this);
+        NetworkManager.instance.eventTarget.on('playerResourceUpdate', this.onStateChanged, this);
+        NetworkManager.instance.eventTarget.on('serverGameAction', this.onStateChanged, this);
         NetworkManager.instance.eventTarget.on('error', this.onError, this);
 
         const pIdStr = cc.sys.localStorage.getItem('localPlayerId');
@@ -39,43 +38,26 @@ export class GameView extends Component {
             this.localPlayerId = parseInt(pIdStr);
         }
 
-        const stateStr = cc.sys.localStorage.getItem('currentGameState');
-        if (stateStr) {
-            this.refreshUI(JSON.parse(stateStr));
-        }
+        this.onStateChanged();
     }
 
     onDestroy() {
-        NetworkManager.instance.eventTarget.off('gameStateUpdate', this.onGameStateUpdate, this);
-        NetworkManager.instance.eventTarget.off('playerResourceUpdate', this.onPlayerResourceUpdate, this);
-        NetworkManager.instance.eventTarget.off('serverGameAction', this.onGameStateUpdate, this);
+        NetworkManager.instance.eventTarget.off('gameStateUpdate', this.onStateChanged, this);
+        NetworkManager.instance.eventTarget.off('playerResourceUpdate', this.onStateChanged, this);
+        NetworkManager.instance.eventTarget.off('serverGameAction', this.onStateChanged, this);
         NetworkManager.instance.eventTarget.off('error', this.onError, this);
     }
 
     private onError(data: any) {
         console.warn("⚠️ 操作被服务器拒绝:", data.message);
-        // 把后端的报错直接显示在画面上，给玩家反馈
         this.phaseLabel.string = `⚠️ ${data.message}`;
     }
 
-    private onPlayerResourceUpdate(data: any) {
+    private onStateChanged() {
         const stateStr = cc.sys.localStorage.getItem('currentGameState');
-        let currentState = stateStr ? JSON.parse(stateStr) : {};
-        if (currentState.players) {
-            const targetPlayer = currentState.players.find((p: any) => p.id == data.playerId);
-            if (targetPlayer) Object.assign(targetPlayer, data.resources || data);
-            cc.sys.localStorage.setItem('currentGameState', JSON.stringify(currentState));
-            this.refreshUI(currentState);
+        if (stateStr) {
+            this.refreshUI(JSON.parse(stateStr));
         }
-    }
-
-    private onGameStateUpdate(data: any) {
-        const newData = data.gameState || data;
-        const stateStr = cc.sys.localStorage.getItem('currentGameState');
-        let currentState = stateStr ? JSON.parse(stateStr) : {};
-        Object.assign(currentState, newData);
-        cc.sys.localStorage.setItem('currentGameState', JSON.stringify(currentState));
-        this.refreshUI(currentState);
     }
 
     private refreshUI(gameState: any) {
@@ -86,66 +68,99 @@ export class GameView extends Component {
         const players = gameState.players || [];
         const isMyTurn = (gameState.currentPlayerIndex == this.localPlayerId) && (gameState.phase === 'placement');
 
-        // 永远保持按钮节点激活（显示在屏幕上）
-        this.btnNextPlayer.active = true;
-        // 获取按钮的核心组件
-        const nextBtnComp = this.btnNextPlayer.getComponent(Button);
-
-        // 【你的绝妙逻辑】：用 interactable 置灰控制
-        if (isMyTurn) {
-            this.phaseLabel.string = "工放阶段 (👉 轮到你了，放置后请结束回合)";
-            // 轮到我，按钮高亮可点
-            if (nextBtnComp) nextBtnComp.interactable = true;
-        } else {
-            this.phaseLabel.string = `(⏳ 等待 玩家 ${gameState.currentPlayerIndex} 行动...)`;
-            // 没轮到我，按钮置灰不可点
-            if (nextBtnComp) nextBtnComp.interactable = false;
-        }
-
         const me = players.find((p: any) => p.id == this.localPlayerId);
         let myLiZhang = 0;
         if (me) {
+            myLiZhang = me.liZhang;
             this.myNameLabel.string = `👤 玩家: ${me.name}`;
             this.coinsLabel.string = `💰 金币: ${me.coins}`;
             this.liZhangLabel.string = `👷 里长: ${me.liZhang}`;
             this.lobstersLabel.string = `🦞 龙虾: ${me.lobsters.length} 只`;
-            myLiZhang = me.liZhang;
+        }
+
+        if (gameState.currentPlayerIndex !== this.currentTurnPlayerIndex || gameState.phase !== this.currentTurnPhase) {
+            this.currentTurnPlayerIndex = gameState.currentPlayerIndex;
+            this.currentTurnPhase = gameState.phase;
+            if (isMyTurn) {
+                this.turnStartLiZhang = myLiZhang;
+            } else {
+                this.turnStartLiZhang = -1;
+            }
+            // 回合切换时，把上一回合小本本的记录彻底擦掉，不许跨回合悔棋
+            cc.sys.localStorage.removeItem('myLastPlacedArea');
+            cc.sys.localStorage.removeItem('myLastPlacedSlot');
+        }
+
+        let hasPlacedThisTurn = false;
+        const lastPlacement = gameState.lastPlacement;
+
+        if (lastPlacement && Number(lastPlacement.playerId) === Number(this.localPlayerId)) {
+            hasPlacedThisTurn = true;
+        } else if (isMyTurn && this.turnStartLiZhang !== -1 && myLiZhang < this.turnStartLiZhang) {
+            hasPlacedThisTurn = true;
+        }
+
+        this.btnNextPlayer.active = true;
+        const nextBtnComp = this.btnNextPlayer.getComponent(Button);
+
+        if (isMyTurn) {
+            if (hasPlacedThisTurn) {
+                this.phaseLabel.string = "工放阶段 (👉 已放置，可重新点击橙色格子撤回，或点结束回合)";
+                if (nextBtnComp) nextBtnComp.interactable = true;
+            } else {
+                this.phaseLabel.string = "工放阶段 (👉 请放置里长)";
+                if (nextBtnComp) nextBtnComp.interactable = false;
+            }
+        } else {
+            this.phaseLabel.string = `(⏳ 等待 玩家 ${gameState.currentPlayerIndex} 行动...)`;
+            if (nextBtnComp) nextBtnComp.interactable = false;
         }
 
         if (gameState.areas) {
-            // 如果轮到我，就把我的里长数传给格子，允许放置
-            const effectiveLiZhang = isMyTurn ? myLiZhang : 0;
+            const effectiveLiZhang = hasPlacedThisTurn ? 0 : myLiZhang;
 
-            this.renderArea(gameState.areas.shrimp_catching, this.areaShrimp, 'shrimp_catching', players, isMyTurn, effectiveLiZhang);
-            this.renderArea(gameState.areas.seafood_market, this.areaMarket, 'seafood_market', players, isMyTurn, effectiveLiZhang);
-            this.renderArea(gameState.areas.breeding, this.areaBreeding, 'breeding', players, isMyTurn, effectiveLiZhang);
-            this.renderArea(gameState.areas.tribute, this.areaTribute, 'tribute', players, isMyTurn, effectiveLiZhang);
-            this.renderArea(gameState.areas.marketplace, this.areaDowntown, 'marketplace', players, isMyTurn, effectiveLiZhang);
+            this.renderArea(gameState.areas.shrimp_catching, this.areaShrimp, 'shrimp_catching', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn);
+            this.renderArea(gameState.areas.seafood_market, this.areaMarket, 'seafood_market', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn);
+            this.renderArea(gameState.areas.breeding, this.areaBreeding, 'breeding', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn);
+            this.renderArea(gameState.areas.tribute, this.areaTribute, 'tribute', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn);
+            this.renderArea(gameState.areas.marketplace, this.areaDowntown, 'marketplace', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn);
         }
     }
 
-    private renderArea(areaData: any, containerNode: Node, areaId: string, players: any[], isMyTurn: boolean, myLiZhang: number) {
+    private renderArea(areaData: any, containerNode: Node, areaId: string, players: any[], isMyTurn: boolean, effectiveLiZhang: number, lastPlacement: any, hasPlacedThisTurn: boolean) {
         if (!areaData || !containerNode) return;
         containerNode.removeAllChildren();
         const slots = areaData.slots || [];
+
+        // 翻开小本本
+        const myLocalLastArea = cc.sys.localStorage.getItem('myLastPlacedArea');
+        const myLocalLastSlot = parseInt(cc.sys.localStorage.getItem('myLastPlacedSlot') || '-1');
+
         for (let i = 0; i < slots.length; i++) {
             const slotNode = instantiate(this.slotPrefab);
             containerNode.addChild(slotNode);
             const occupantId = slots[i];
+
+            // 【核心】：判断是否是我刚才放的格子（综合服务器数据和小本本推导）
+            const isLastPlaced =
+                (lastPlacement && Number(lastPlacement.playerId) === Number(this.localPlayerId) && lastPlacement.areaName === areaId && lastPlacement.slotIndex === i) ||
+                (occupantId == this.localPlayerId && hasPlacedThisTurn && myLocalLastArea === areaId && myLocalLastSlot === i);
+
+            const canCancel = isMyTurn && isLastPlaced;
+            const canPlace = isMyTurn && effectiveLiZhang > 0 && occupantId === null;
+
             const slotView = slotNode.getComponent(ActionSlotView);
             if (slotView) {
-                slotView.init(areaId, i, occupantId, players, isMyTurn, myLiZhang);
+                slotView.init(areaId, i, occupantId, players, canPlace, canCancel);
             }
         }
     }
 
     public onBtnNextPlayerClicked() {
         console.log("📤 点击结束回合按钮");
-        NetworkManager.instance.send('clientGameAction', 'nextPlayer', {
-            payload: {}
-        });
+        NetworkManager.instance.send('clientGameAction', 'nextPlayer', { payload: {} });
 
-        // 点完之后立刻把按钮置灰，防止网络卡顿时的连点
+        this.turnStartLiZhang = -1;
         const nextBtnComp = this.btnNextPlayer.getComponent(Button);
         if (nextBtnComp) nextBtnComp.interactable = false;
     }
