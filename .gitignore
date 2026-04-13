@@ -1,0 +1,9 @@
+library/
+temp/
+build/
+local/
+settings/
+.vscode/
+.DS_Store
+*.log
+*.meta
