@@ -39,8 +39,7 @@ export class NetworkManager {
                 const actionType = innerData.actionType || innerData.action_type;
 
                 // ==========================================
-                // 🌟 全局状态拦截器 (Global State Interceptor)
-                // 彻底解决场景切换、加载卡顿时导致的状态丢失问题！
+                // 🌟 全局状态拦截器 (增强版)
                 // ==========================================
                 const stateStr = cc.sys.localStorage.getItem('currentGameState');
                 let currentState = stateStr ? JSON.parse(stateStr) : {};
@@ -52,24 +51,31 @@ export class NetworkManager {
                     Object.assign(currentState, newData);
                     stateModified = true;
                 }
-                // 拦截 2：玩家资源更新
-                else if (serverEvent === 'playerResourceUpdate' || actionType === 'playerResourceUpdate') {
-                    if (currentState.players) {
-                        const targetPlayer = currentState.players.find((p: any) => p.id == innerData.playerId);
+                // 拦截 2：玩家资源更新 (包含专门的更新包和结算时的附加包)
+                // 重点修复：同时拦截 playerResourceUpdate 和 AREA_WAITING_UI 里的 player 数据
+                const isResourceMsg = (serverEvent === 'playerResourceUpdate' || actionType === 'playerResourceUpdate');
+                const isWaitingUIMsg = (actionType === 'areaWaitingUI');
+
+                if (isResourceMsg || isWaitingUIMsg) {
+                    const playerData = innerData.player || innerData.resources || (isResourceMsg ? innerData : null);
+                    const playerId = innerData.playerId;
+
+                    if (playerData && playerId !== undefined && currentState.players) {
+                        const targetPlayer = currentState.players.find((p: any) => p.id == playerId);
                         if (targetPlayer) {
-                            Object.assign(targetPlayer, innerData.resources || innerData);
+                            // 将捕虾结果等资源直接合并进缓存
+                            Object.assign(targetPlayer, playerData);
                             stateModified = true;
+                            console.log(`✅ 已同步玩家 ${playerId} 的最新资源数据`);
                         }
                     }
                 }
 
-                // 不管场景在哪，强制写入最新状态
                 if (stateModified) {
                     cc.sys.localStorage.setItem('currentGameState', JSON.stringify(currentState));
                 }
                 // ==========================================
 
-                // 继续向下派发事件给可能正在监听的 UI
                 if (actionType) {
                     const payload = innerData.data !== undefined ? innerData.data : innerData;
                     this.eventTarget.emit(actionType, payload);
