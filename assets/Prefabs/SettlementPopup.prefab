@@ -236,9 +236,9 @@
     "_dstBlendFactor": 4,
     "_color": {
       "__type__": "cc.Color",
-      "r": 255,
-      "g": 255,
-      "b": 255,
+      "r": 238,
+      "g": 38,
+      "b": 38,
       "a": 255
     },
     "_string": "捕虾区结算",
@@ -324,7 +324,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 0,
-      "y": 77.931,
+      "y": 98.241,
       "z": 0
     },
     "_lrot": {
@@ -395,9 +395,9 @@
     "_dstBlendFactor": 4,
     "_color": {
       "__type__": "cc.Color",
-      "r": 255,
-      "g": 255,
-      "b": 255,
+      "r": 89,
+      "g": 233,
+      "b": 22,
       "a": 255
     },
     "_string": "请执行你的结算行动...",
@@ -739,7 +739,7 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 100,
+      "width": 300,
       "height": 40
     },
     "_anchorPoint": {
@@ -848,7 +848,7 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 280,
+      "width": 300,
       "height": 40
     },
     "_anchorPoint": {
@@ -1000,6 +1000,8 @@
       "__id__": 0
     },
     "fileId": "179KH9kwFF2rGVsrowwvM+",
+    "instance": null,
+    "targetOverrides": null,
     "nestedPrefabInstanceRoots": null
   },
   {
@@ -1123,7 +1125,7 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 100,
+      "width": 150,
       "height": 40
     },
     "_anchorPoint": {
@@ -1509,7 +1511,7 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 100,
+      "width": 150,
       "height": 40
     },
     "_anchorPoint": {
@@ -1895,7 +1897,7 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 100,
+      "width": 150,
       "height": 40
     },
     "_anchorPoint": {
@@ -1926,9 +1928,9 @@
     "_dstBlendFactor": 4,
     "_color": {
       "__type__": "cc.Color",
-      "r": 0,
-      "g": 0,
-      "b": 0,
+      "r": 255,
+      "g": 255,
+      "b": 255,
       "a": 255
     },
     "_string": "完成/关闭",
@@ -2004,7 +2006,7 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 100,
+      "width": 150,
       "height": 40
     },
     "_anchorPoint": {
@@ -2035,9 +2037,9 @@
     "_dstBlendFactor": 4,
     "_color": {
       "__type__": "cc.Color",
-      "r": 255,
-      "g": 255,
-      "b": 255,
+      "r": 170,
+      "g": 170,
+      "b": 170,
       "a": 255
     },
     "_spriteFrame": {
@@ -2297,7 +2299,7 @@
       "a": 150
     },
     "_spriteFrame": {
-      "__uuid__": "57520716-48c8-4a19-8acf-41c9f8777fb0@f9941",
+      "__uuid__": "20835ba4-6145-4fbc-a58a-051ce700aa3e@f9941",
       "__expectedType__": "cc.SpriteFrame"
     },
     "_type": 0,

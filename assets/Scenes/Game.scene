@@ -3624,6 +3624,10 @@
       "__uuid__": "3713e52a-6dd9-4872-a198-9f8b24897946",
       "__expectedType__": "cc.Prefab"
     },
+    "marketPopupPrefab": {
+      "__uuid__": "c7b0866f-43f6-4bb2-99c6-16f607421971",
+      "__expectedType__": "cc.Prefab"
+    },
     "areaShrimp": {
       "__id__": 44
     },

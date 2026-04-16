@@ -2,6 +2,7 @@ import { _decorator, Component, Label, Node, Prefab, instantiate, Button } from 
 import { NetworkManager } from '../Network/NetworkManager';
 import { ActionSlotView } from './ActionSlotView';
 import { SettlementPopup } from './SettlementPopup';
+import { MarketPopup } from './MarketPopup';
 const { ccclass, property } = _decorator;
 
 @ccclass('GameView')
@@ -9,8 +10,6 @@ export class GameView extends Component {
 
     @property(Label) public roundLabel: Label = null;
     @property(Label) public phaseLabel: Label = null;
-
-    // 【修改】：HUD 绑定，增加海草和虾笼
     @property(Label) public myNameLabel: Label = null;
     @property(Label) public coinsLabel: Label = null;
     @property(Label) public liZhangLabel: Label = null;
@@ -20,6 +19,7 @@ export class GameView extends Component {
 
     @property(Prefab) public slotPrefab: Prefab = null;
     @property(Prefab) public popupPrefab: Prefab = null;
+    @property(Prefab) public marketPopupPrefab: Prefab = null; // 【新增绑定】
 
     @property(Node) public areaShrimp: Node = null;
     @property(Node) public areaMarket: Node = null;
@@ -40,7 +40,6 @@ export class GameView extends Component {
         NetworkManager.instance.eventTarget.on('playerResourceUpdate', this.onStateChanged, this);
         NetworkManager.instance.eventTarget.on('serverGameAction', this.onStateChanged, this);
         NetworkManager.instance.eventTarget.on('error', this.onError, this);
-
         NetworkManager.instance.eventTarget.on('areaSettlementStart', this.onAreaSettlementStart, this);
         NetworkManager.instance.eventTarget.on('areaWaitingUI', this.onAreaWaitingUI, this);
         NetworkManager.instance.eventTarget.on('settlementComplete', this.onSettlementComplete, this);
@@ -57,7 +56,6 @@ export class GameView extends Component {
         NetworkManager.instance.eventTarget.off('playerResourceUpdate', this.onStateChanged, this);
         NetworkManager.instance.eventTarget.off('serverGameAction', this.onStateChanged, this);
         NetworkManager.instance.eventTarget.off('error', this.onError, this);
-
         NetworkManager.instance.eventTarget.off('areaSettlementStart', this.onAreaSettlementStart, this);
         NetworkManager.instance.eventTarget.off('areaWaitingUI', this.onAreaWaitingUI, this);
         NetworkManager.instance.eventTarget.off('settlementComplete', this.onSettlementComplete, this);
@@ -69,7 +67,6 @@ export class GameView extends Component {
     }
 
     private onAreaSettlementStart(data: any) {
-        console.log("🚩 区域结算开始:", data.areaType);
         const areaNames: any = {
             'shrimp_catching': '捕虾区',
             'seafood_market': '海鲜市场',
@@ -86,23 +83,42 @@ export class GameView extends Component {
         const isDoneBroadcast = (data.step === 'done' && data.playerId === null);
 
         if (isForMe || isDoneBroadcast) {
-            if (this.popupPrefab) {
+            // 【核心路由】：根据区域类型选择对应的预制体
+            let targetPrefab = (data.areaType === 'seafood_market') ? this.marketPopupPrefab : this.popupPrefab;
+
+            if (this.currentPopupNode && this.currentPopupNode.isValid) {
+                const isMarketNode = this.currentPopupNode.getComponent(MarketPopup) !== null;
+                const needMarketNode = (data.areaType === 'seafood_market');
+                if (isMarketNode !== needMarketNode) {
+                    this.currentPopupNode.destroy();
+                    this.currentPopupNode = null;
+                }
+            }
+
+            if (targetPrefab) {
                 if (!this.currentPopupNode || !this.currentPopupNode.isValid) {
                     if (data.step !== 'done') {
-                        this.currentPopupNode = instantiate(this.popupPrefab);
+                        this.currentPopupNode = instantiate(targetPrefab);
                         this.node.addChild(this.currentPopupNode);
                     }
                 }
 
                 if (this.currentPopupNode && this.currentPopupNode.isValid) {
-                    const popupComp = this.currentPopupNode.getComponent(SettlementPopup);
-                    if (popupComp) popupComp.init(data);
+                    if (data.areaType === 'seafood_market') {
+                        this.currentPopupNode.getComponent(MarketPopup)?.init(data);
+                    } else {
+                        this.currentPopupNode.getComponent(SettlementPopup)?.init(data);
+                    }
                 }
             }
         }
 
         if (data.playerId !== null && data.playerId != this.localPlayerId) {
             this.phaseLabel.string = `结算阶段：等待 玩家 ${data.playerId} 操作...`;
+            if (this.currentPopupNode && this.currentPopupNode.isValid) {
+                this.currentPopupNode.destroy();
+                this.currentPopupNode = null;
+            }
         }
     }
 
@@ -137,8 +153,6 @@ export class GameView extends Component {
             this.coinsLabel.string = `💰 金币: ${me.coins}`;
             this.liZhangLabel.string = `👷 里长: ${me.liZhang}`;
             this.lobstersLabel.string = `🦞 龙虾: ${me.lobsters.length} 只`;
-
-            // 【核心】：新增显示海草和虾笼
             if (this.seaweedLabel) this.seaweedLabel.string = `🌿 海草: ${me.seaweed || 0}`;
             if (this.cagesLabel) this.cagesLabel.string = `🛒 虾笼: ${me.cages || 0}`;
         }
@@ -182,11 +196,9 @@ export class GameView extends Component {
 
         if (gameState.areas) {
             const effectiveLiZhang = hasPlacedThisTurn ? 0 : myLiZhang;
-
             this.renderArea(gameState.areas.shrimp_catching, this.areaShrimp, 'shrimp_catching', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn);
             this.renderArea(gameState.areas.seafood_market, this.areaMarket, 'seafood_market', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn);
             this.renderArea(gameState.areas.breeding, this.areaBreeding, 'breeding', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn);
-
             const tributeData = gameState.areas.tribute;
             if (tributeData) {
                 this.renderArea(tributeData, this.areaTributeChallenge, 'tribute', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, [3, 4, 5]);
