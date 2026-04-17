@@ -14,12 +14,14 @@ export class ActionSlotView extends Component {
     private slotIndex: number = -1;
     private canPlace: boolean = false;
     private canCancel: boolean = false;
+    private failReason: string = ""; // 【新增】：精准记录不能点击的原因
 
-    public init(areaId: string, slotIndex: number, occupantId: number | null, players: any[], canPlace: boolean, canCancel: boolean) {
+    public init(areaId: string, slotIndex: number, occupantId: number | null, players: any[], canPlace: boolean, canCancel: boolean, failReason: string = "") {
         this.areaId = areaId;
         this.slotIndex = slotIndex;
         this.canPlace = canPlace;
         this.canCancel = canCancel;
+        this.failReason = failReason;
 
         const slotInfo = this.getSlotInfo(areaId, slotIndex);
 
@@ -44,7 +46,12 @@ export class ActionSlotView extends Component {
             }
         } else {
             this.ownerLabel.string = "";
-            this.bgSprite.color = new Color(200, 200, 200);
+            // 如果是因为条件不满足而不可点击，底色加深一点点作为反馈
+            if (!this.canPlace && this.failReason) {
+                this.bgSprite.color = new Color(170, 170, 170);
+            } else {
+                this.bgSprite.color = new Color(200, 200, 200);
+            }
         }
     }
 
@@ -84,7 +91,6 @@ export class ActionSlotView extends Component {
                 if (index === 1) { reward = "金×1(3+)"; count = "1"; }
                 if (index === 2) { reward = "金×2(4+)"; count = "1"; }
                 break;
-            // 【核心新增】：市场内的雇佣里长区
             case 'hire_headman':
                 if (index === 0 || index === 1) { reward = "草×1"; count = "2回+"; }
                 if (index === 2 || index === 3) { reward = "普虾×1"; count = "3回+"; }
@@ -104,7 +110,6 @@ export class ActionSlotView extends Component {
         }
 
         if (this.canPlace) {
-            // 【核心拦截】：如果是雇佣区，我们要发送专门的 areaAction，因为现在是结算阶段！
             if (this.areaId === 'hire_headman') {
                 NetworkManager.instance.send('clientGameAction', 'areaAction', {
                     payload: { actionType: 'hire_headman_slot', payload: { slotIndex: this.slotIndex } }
@@ -119,5 +124,8 @@ export class ActionSlotView extends Component {
             cc.sys.localStorage.setItem('myLastPlacedSlot', this.slotIndex.toString());
             return;
         }
+
+        // 【核心体验升级】：在控制台精准输出点不动的原因！
+        console.warn(`❌ 槽位点击无效: ${this.failReason || '条件不满足'}`);
     }
 }
