@@ -3,6 +3,7 @@ import { NetworkManager } from '../Network/NetworkManager';
 import { ActionSlotView } from './ActionSlotView';
 import { SettlementPopup } from './SettlementPopup';
 import { MarketPopup } from './MarketPopup';
+import { BreedingPopup } from './BreedingPopup';
 const { ccclass, property } = _decorator;
 
 @ccclass('GameView')
@@ -19,7 +20,8 @@ export class GameView extends Component {
 
     @property(Prefab) public slotPrefab: Prefab = null;
     @property(Prefab) public popupPrefab: Prefab = null;
-    @property(Prefab) public marketPopupPrefab: Prefab = null; // 【新增绑定】
+    @property(Prefab) public marketPopupPrefab: Prefab = null;
+    @property(Prefab) public breedingPopupPrefab: Prefab = null;
 
     @property(Node) public areaShrimp: Node = null;
     @property(Node) public areaMarket: Node = null;
@@ -29,11 +31,13 @@ export class GameView extends Component {
     @property(Node) public areaDowntown: Node = null;
     @property(Node) public btnNextPlayer: Node = null;
 
+
     private localPlayerId: number = -1;
     private currentTurnPlayerIndex: number = -1;
     private currentTurnPhase: string = "";
     private turnStartLiZhang: number = -1;
     private currentPopupNode: Node = null;
+
 
     onLoad() {
         NetworkManager.instance.eventTarget.on('gameStateUpdate', this.onStateChanged, this);
@@ -83,13 +87,21 @@ export class GameView extends Component {
         const isDoneBroadcast = (data.step === 'done' && data.playerId === null);
 
         if (isForMe || isDoneBroadcast) {
-            // 【核心路由】：根据区域类型选择对应的预制体
-            let targetPrefab = (data.areaType === 'seafood_market') ? this.marketPopupPrefab : this.popupPrefab;
+            // 【核心路由分支】：根据区域选面板！
+            let targetPrefab = this.popupPrefab; // 默认普通捕虾面板
+            if (data.areaType === 'seafood_market') targetPrefab = this.marketPopupPrefab;
+            if (data.areaType === 'breeding') targetPrefab = this.breedingPopupPrefab;
 
             if (this.currentPopupNode && this.currentPopupNode.isValid) {
-                const isMarketNode = this.currentPopupNode.getComponent(MarketPopup) !== null;
-                const needMarketNode = (data.areaType === 'seafood_market');
-                if (isMarketNode !== needMarketNode) {
+                // 检查当前的弹窗类型是否和我们需要的一致
+                const isMarket = this.currentPopupNode.getComponent('MarketPopup') !== null;
+                const isBreeding = this.currentPopupNode.getComponent('BreedingPopup') !== null;
+
+                const needMarket = (data.areaType === 'seafood_market');
+                const needBreeding = (data.areaType === 'breeding');
+
+                // 如果类型变了，立刻销毁旧的
+                if (isMarket !== needMarket || isBreeding !== needBreeding) {
                     this.currentPopupNode.destroy();
                     this.currentPopupNode = null;
                 }
@@ -105,9 +117,11 @@ export class GameView extends Component {
 
                 if (this.currentPopupNode && this.currentPopupNode.isValid) {
                     if (data.areaType === 'seafood_market') {
-                        this.currentPopupNode.getComponent(MarketPopup)?.init(data);
+                        this.currentPopupNode.getComponent('MarketPopup')?.init(data);
+                    } else if (data.areaType === 'breeding') {
+                        this.currentPopupNode.getComponent('BreedingPopup')?.init(data);
                     } else {
-                        this.currentPopupNode.getComponent(SettlementPopup)?.init(data);
+                        this.currentPopupNode.getComponent('SettlementPopup')?.init(data);
                     }
                 }
             }

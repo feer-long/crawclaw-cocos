@@ -3628,6 +3628,10 @@
       "__uuid__": "c7b0866f-43f6-4bb2-99c6-16f607421971",
       "__expectedType__": "cc.Prefab"
     },
+    "breedingPopupPrefab": {
+      "__uuid__": "9bc60b73-25e1-4f62-a373-ddd3be5128b0",
+      "__expectedType__": "cc.Prefab"
+    },
     "areaShrimp": {
       "__id__": 44
     },
