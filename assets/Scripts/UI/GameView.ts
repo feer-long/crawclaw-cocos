@@ -4,6 +4,7 @@ import { ActionSlotView } from './ActionSlotView';
 import { SettlementPopup } from './SettlementPopup';
 import { MarketPopup } from './MarketPopup';
 import { BreedingPopup } from './BreedingPopup';
+import { MarketplacePopup } from './MarketplacePopup';
 const { ccclass, property } = _decorator;
 
 @ccclass('GameView')
@@ -22,6 +23,7 @@ export class GameView extends Component {
     @property(Prefab) public popupPrefab: Prefab = null;
     @property(Prefab) public marketPopupPrefab: Prefab = null;
     @property(Prefab) public breedingPopupPrefab: Prefab = null;
+    @property(Prefab) public marketplacePopupPrefab: Prefab = null;
 
     @property(Node) public areaShrimp: Node = null;
     @property(Node) public areaMarket: Node = null;
@@ -87,21 +89,25 @@ export class GameView extends Component {
         const isDoneBroadcast = (data.step === 'done' && data.playerId === null);
 
         if (isForMe || isDoneBroadcast) {
-            // 【核心路由分支】：根据区域选面板！
-            let targetPrefab = this.popupPrefab; // 默认普通捕虾面板
+            let targetPrefab = this.popupPrefab; // 默认普通结算面板
             if (data.areaType === 'seafood_market') targetPrefab = this.marketPopupPrefab;
             if (data.areaType === 'breeding') targetPrefab = this.breedingPopupPrefab;
 
+            // 【新增】：如果是闹市区，指向闹市面板！
+            if (data.areaType === 'marketplace') targetPrefab = this.marketplacePopupPrefab;
+
             if (this.currentPopupNode && this.currentPopupNode.isValid) {
-                // 检查当前的弹窗类型是否和我们需要的一致
                 const isMarket = this.currentPopupNode.getComponent('MarketPopup') !== null;
                 const isBreeding = this.currentPopupNode.getComponent('BreedingPopup') !== null;
+                // 【新增】判断当前是不是闹市面板
+                const isMarketplace = this.currentPopupNode.getComponent('MarketplacePopup') !== null;
 
                 const needMarket = (data.areaType === 'seafood_market');
                 const needBreeding = (data.areaType === 'breeding');
+                const needMarketplace = (data.areaType === 'marketplace');
 
                 // 如果类型变了，立刻销毁旧的
-                if (isMarket !== needMarket || isBreeding !== needBreeding) {
+                if (isMarket !== needMarket || isBreeding !== needBreeding || isMarketplace !== needMarketplace) {
                     this.currentPopupNode.destroy();
                     this.currentPopupNode = null;
                 }
@@ -120,6 +126,9 @@ export class GameView extends Component {
                         this.currentPopupNode.getComponent('MarketPopup')?.init(data);
                     } else if (data.areaType === 'breeding') {
                         this.currentPopupNode.getComponent('BreedingPopup')?.init(data);
+                    } else if (data.areaType === 'marketplace') {
+                        // 【新增】：初始化闹市面板
+                        this.currentPopupNode.getComponent('MarketplacePopup')?.init(data);
                     } else {
                         this.currentPopupNode.getComponent('SettlementPopup')?.init(data);
                     }
