@@ -11,7 +11,6 @@ export class MarketPopup extends Component {
     @property(Label) public actionCountLabel: Label = null;
     @property(Label) public playerResourceLabel: Label = null;
 
-    // 【新增】：刚才在编辑器里建好的用来展示额外里长的小文本
     @property(Label) public hireInfoLabel: Label = null;
 
     @property(Node) public btnTabMarket: Node = null;
@@ -92,8 +91,15 @@ export class MarketPopup extends Component {
         this.setBtnText(this.btnBuySeaweed3, `买3草 (-4金)`);
         this.setBtnText(this.btnSellSeaweed3, `卖3草 (+4金)`);
 
+        const normalLobsters = player.lobsters.filter((l: any) => !l.grade || l.grade === 'normal');
+
         if (this.btnBuyLobster) this.btnBuyLobster.interactable = (player.coins >= prices.buyLobster && marketLobsterCount > 0);
-        if (this.btnSellLobster) this.btnSellLobster.interactable = (player.lobsters.length > 0);
+
+        // =====================================
+        // 【核心修复】：市场满了（达到8只），卖出按钮强制置灰
+        // =====================================
+        if (this.btnSellLobster) this.btnSellLobster.interactable = (normalLobsters.length > 0 && marketLobsterCount < 8);
+
         if (this.btnBuyCage) this.btnBuyCage.interactable = (player.coins >= prices.buyCage);
         if (this.btnSellCage) this.btnSellCage.interactable = (player.cages > 0);
         if (this.btnBuySeaweed) this.btnBuySeaweed.interactable = (player.coins >= 1);
@@ -115,10 +121,9 @@ export class MarketPopup extends Component {
         this.hireSlotContainer.removeAllChildren();
 
         const player = this.rawData.player;
-
-        // 【防错核心】：所有判定数据直接从服务器最新的包里面拿，绝对不再从 localStorage 读导致延迟！
         const currentRound = this.rawData.currentRound || 1;
         const hireSlotsData = this.rawData.hireSlots || new Array(8).fill(null);
+
         const stateStr = cc.sys.localStorage.getItem('currentGameState');
         const playersData = stateStr ? JSON.parse(stateStr).players : [];
 
@@ -126,14 +131,13 @@ export class MarketPopup extends Component {
         const canAfford = player.coins >= 6;
         const notMaxedOut = hiredCount < 2;
 
-        // 【新增】：直观展示玩家的市场里的2个额外里长
         if (this.hireInfoLabel) {
             const availableExtra = 2 - hiredCount;
             let extraStr = "";
             for(let i=0; i<availableExtra; i++) extraStr += "👷 ";
             for(let i=0; i<hiredCount; i++) extraStr += "✔️(已雇) ";
             this.hireInfoLabel.string = `我的待雇佣市场里长: ${extraStr}\n(占槽位每次需 6 金币)`;
-            this.hireInfoLabel.color = canAfford ? new Color(0, 120, 0) : new Color(200, 50, 50); // 钱够绿色，钱不够红色警告
+            this.hireInfoLabel.color = canAfford ? new Color(0, 120, 0) : new Color(200, 50, 50);
         }
 
         for (let i = 0; i < 8; i++) {
@@ -146,7 +150,6 @@ export class MarketPopup extends Component {
             if (i === 2 || i === 3) isRoundUnlocked = currentRound >= 3;
             if (i >= 4) isRoundUnlocked = currentRound >= 4;
 
-            // 【精准拦截分析】：查出为什么点不动
             let canPlace = false;
             let failReason = "";
 
@@ -159,7 +162,6 @@ export class MarketPopup extends Component {
 
             const slotView = slotNode.getComponent(ActionSlotView);
             if (slotView) {
-                // 将拦截原因发给预制体，点击时会打印
                 slotView.init('hire_headman', i, occupantId, playersData, canPlace, false, failReason);
             }
         }
