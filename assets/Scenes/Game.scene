@@ -3636,6 +3636,10 @@
       "__uuid__": "698fcbce-a2a1-4c38-b6d3-4e41a6c483d8",
       "__expectedType__": "cc.Prefab"
     },
+    "tributePopupPrefab": {
+      "__uuid__": "6ca1d72f-c212-40de-80ef-3fa53528c7e1",
+      "__expectedType__": "cc.Prefab"
+    },
     "areaShrimp": {
       "__id__": 44
     },
