@@ -19,6 +19,8 @@ export class GameView extends Component {
     @property(Label) public lobstersLabel: Label = null;
     @property(Label) public seaweedLabel: Label = null;
     @property(Label) public cagesLabel: Label = null;
+    @property(Label) public tributeCardsLabel: Label = null;
+    @property(Label) public buffsLabel: Label = null;
 
     @property(Prefab) public slotPrefab: Prefab = null;
     @property(Prefab) public popupPrefab: Prefab = null;
@@ -178,12 +180,37 @@ export class GameView extends Component {
         let myLiZhang = 0;
         if (me) {
             myLiZhang = me.liZhang;
-            this.myNameLabel.string = `👤 玩家: ${me.name}`;
-            this.coinsLabel.string = `💰 金币: ${me.coins}`;
-            this.liZhangLabel.string = `👷 里长: ${me.liZhang}`;
-            this.lobstersLabel.string = `🦞 龙虾: ${me.lobsters.length} 只`;
-            if (this.seaweedLabel) this.seaweedLabel.string = `🌿 海草: ${me.seaweed || 0}`;
-            if (this.cagesLabel) this.cagesLabel.string = `🛒 虾笼: ${me.cages || 0}`;
+            this.myNameLabel.string = `👤 玩家：${me.name}`;
+            this.coinsLabel.string = `💰 金币：${me.coins}`;
+            this.liZhangLabel.string = `👷 里长：${me.liZhang}`;
+            this.lobstersLabel.string = `🦞 龙虾：${me.lobsters.length} 只`;
+            if (this.seaweedLabel) this.seaweedLabel.string = `🌿 海草：${me.seaweed || 0}`;
+            if (this.cagesLabel) this.cagesLabel.string = `🛒 虾笼：${me.cages || 0}`;
+            
+            // ========== 新增：上供卡列表 ==========
+            if (this.tributeCardsLabel) {
+                const cards = me.tributeCards || [];
+                if (cards.length > 0) {
+                    const names = cards.map((c: any) => c.name).join(' | ');
+                    this.tributeCardsLabel.string = `📜 上供卡：${names}`;
+                    this.tributeCardsLabel.node.active = true;
+                } else {
+                    this.tributeCardsLabel.string = '📜 上供卡：无';
+                    this.tributeCardsLabel.node.active = true;
+                }
+            }
+            
+            // ========== 新增：光环列表 ==========
+            if (this.buffsLabel) {
+                const buffs = me.permaBuffs || [];
+                if (buffs.length > 0) {
+                    this.buffsLabel.string = '✨ 生效中';
+                    this.buffsLabel.node.active = true;
+                } else {
+                    this.buffsLabel.string = '✨ 无';
+                    this.buffsLabel.node.active = true;
+                }
+            }
         }
 
         if (gameState.currentPlayerIndex !== this.currentTurnPlayerIndex || gameState.phase !== this.currentTurnPhase) {

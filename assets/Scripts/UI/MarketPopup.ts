@@ -76,7 +76,14 @@ export class MarketPopup extends Component {
 
         this.actionCountLabel.string = `剩余操作次数：${this.actionCount}`;
         this.marketInfoLabel.string = `市场龙虾余量：${marketLobsterCount} / 8`;
-        this.playerResourceLabel.string = `拥有: 💰${player.coins} 🌿${player.seaweed} 🛒${player.cages} 🦞${player.lobsters.length}`;
+        
+        // ========== 新增：检测并显示市场规则光环 ==========
+        const hasMarketRule = player.permaBuffs && player.permaBuffs.includes('permaBuff_market_rule');
+        if (hasMarketRule) {
+            this.marketInfoLabel.string += '\n📌 市场规则：普通龙虾 ¥1/只 (不可卖出)';
+        }
+        
+        this.playerResourceLabel.string = `拥有：💰${player.coins} 🌿${player.seaweed} 🛒${player.cages} 🦞${player.lobsters.length}`;
 
         if (this.currentPriceLabel) {
             this.currentPriceLabel.string = `当前流通物价：龙虾 ${prices.buyLobster}金 | 虾笼 ${prices.buyCage}金 | 1草 1金 | 3草 4金`;
