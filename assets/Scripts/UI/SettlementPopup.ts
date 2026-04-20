@@ -8,6 +8,7 @@ export class SettlementPopup extends Component {
     @property(Label) public titleLabel: Label = null;
     @property(Label) public descLabel: Label = null;
     @property(Label) public resultLabel: Label = null;
+    @property(Label) public loadingLabel: Label = null!
 
     @property(Node) public btnConfirm: Node = null;
     @property(Node) public btnChooseLobster: Node = null;
@@ -16,17 +17,25 @@ export class SettlementPopup extends Component {
 
     private areaType: string = "";
     private currentStep: string = "";
+    private isWaitingResponse: boolean = false;
+    private pendingAction: { actionType: string, payload: any } | null = null;
+    private loadingTimer: number = null;
 
     public init(data: any) {
-        // =========================================================
-        // 【核心修复】：取消之前所有的定时器！
-        // 防止同一个玩家连续结算两个槽位时，上一个槽位的 1.5秒定时销毁任务把新的界面误杀！
-        // =========================================================
         this.unscheduleAllCallbacks();
+        this._clearLoadingTimer();
+        this.isWaitingResponse = false;
+        this.pendingAction = null;
+
+        if (this.loadingLabel?.node) this.loadingLabel.active = false;
 
         this.areaType = data.areaType;
         const actionCount = data.actionCount || 0;
         this.currentStep = data.step || 'waiting_confirm';
+
+        NetworkManager.instance.eventTarget.on('areaSettlementStart', this._onSettlementResponse, this);
+        NetworkManager.instance.eventTarget.on('settlementComplete', this._onSettlementResponse, this);
+        NetworkManager.instance.eventTarget.on('error', this._onError, this);
 
         const areaNames: any = {
             'shrimp_catching': '🦐 捕虾区',
@@ -45,13 +54,11 @@ export class SettlementPopup extends Component {
             this.resultLabel.string = "请开始你的操作";
         }
 
-        // 先把所有按钮隐藏
         if (this.btnConfirm) this.btnConfirm.active = false;
         if (this.btnChooseLobster) this.btnChooseLobster.active = false;
         if (this.btnChooseSeaweed) this.btnChooseSeaweed.active = false;
         if (this.btnClose) this.btnClose.active = false;
 
-        // 根据步骤展示对应按钮
         if (this.currentStep === 'waiting_confirm') {
             this.descLabel.string += "\n\n👉 点击下方按钮进行抽取！";
             if (this.btnConfirm) this.btnConfirm.active = true;
@@ -63,7 +70,6 @@ export class SettlementPopup extends Component {
         }
         else if (this.currentStep === 'done') {
             this.descLabel.string = "✅ 该槽位操作完毕！(即将自动关闭)";
-            // 触发 1.5 秒后关闭（如果是同一个人连着结算，这个定时器会在下一次 init 时被直接清除）
             this.scheduleOnce(() => {
                 if (this.node && this.node.isValid) {
                     this.node.destroy();
@@ -78,33 +84,117 @@ export class SettlementPopup extends Component {
             serverActionType = 'confirm';
         }
 
-        // 防连点：点击后立刻隐藏按钮
-        if (this.btnConfirm) this.btnConfirm.active = false;
-
-        NetworkManager.instance.send('clientGameAction', 'areaAction', {
-            payload: { actionType: serverActionType, payload: {} }
-        });
+        this._sendWithRetry({ actionType: serverActionType, payload: {} });
     }
 
     public onBtnChooseLobsterClicked() {
-        if (this.btnChooseLobster) this.btnChooseLobster.active = false;
-        if (this.btnChooseSeaweed) this.btnChooseSeaweed.active = false;
-
-        NetworkManager.instance.send('clientGameAction', 'areaAction', {
-            payload: { actionType: 'choose_either', payload: { choice: 'lobster' } }
-        });
+        this._sendWithRetry({ actionType: 'choose_either', payload: { choice: 'lobster' } });
     }
 
     public onBtnChooseSeaweedClicked() {
-        if (this.btnChooseLobster) this.btnChooseLobster.active = false;
-        if (this.btnChooseSeaweed) this.btnChooseSeaweed.active = false;
-
-        NetworkManager.instance.send('clientGameAction', 'areaAction', {
-            payload: { actionType: 'choose_either', payload: { choice: 'seaweed' } }
-        });
+        this._sendWithRetry({ actionType: 'choose_either', payload: { choice: 'seaweed' } });
     }
 
     public onBtnCloseClicked() {
+        this._cleanup();
         this.node.destroy();
+    }
+
+    protected onDestroy() {
+        this._cleanup();
+    }
+
+    private _sendWithRetry(action: { actionType: string, payload: any }) {
+        if (this.isWaitingResponse) {
+            return;
+        }
+
+        this._startWaiting();
+        this.pendingAction = action;
+
+        NetworkManager.instance.send('clientGameAction', 'areaAction', {
+            payload: action
+        });
+
+        this.loadingTimer = setTimeout(() => {
+            if (this.isWaitingResponse && this.pendingAction && this.node && this.node.isValid) {
+                if (this.loadingLabel?.node) {
+                    this.loadingLabel.string = "请求超时，点击重试";
+                    this.loadingLabel.active = true;
+                }
+                if (this.btnClose) this.btnClose.active = true;
+                this.isWaitingResponse = false;
+            }
+        }, 5000);
+    }
+
+    private _startWaiting() {
+        this.isWaitingResponse = true;
+        if (this.btnConfirm) this.btnConfirm.active = false;
+        if (this.btnChooseLobster) this.btnChooseLobster.active = false;
+        if (this.btnChooseSeaweed) this.btnChooseSeaweed.active = false;
+        if (this.btnClose) this.btnClose.active = false;
+
+        if (this.loadingLabel?.node) {
+            this.loadingLabel.string = "等待服务器响应...";
+            this.loadingLabel.active = true;
+        }
+
+        this.loadingTimer = setTimeout(() => {
+            if (this.isWaitingResponse && this.pendingAction && this.node && this.node.isValid) {
+                if (this.loadingLabel?.node) {
+                    this.loadingLabel.string = "请求超时，点击重试";
+                    this.loadingLabel.active = true;
+                }
+            }
+        })
+    }
+
+    private _onSettlementResponse = (data: any) => {
+        this._clearLoadingTimer();
+        this.isWaitingResponse = false;
+        this.pendingAction = null;
+        if (this.loadingLabel?.node) this.loadingLabel.active = false;
+    }
+
+    private _onError = (data: any) => {
+        if (data.code === 'DUPLICATE_REQUEST' && this.pendingAction && this.node && this.node.isValid) {
+            this._clearLoadingTimer();
+
+            setTimeout(() => {
+                if (this.pendingAction && this.node && this.node.isValid) {
+                    NetworkManager.instance.send('clientGameAction', 'areaAction', {
+                        payload: this.pendingAction
+                    });
+
+                    this.loadingTimer = setTimeout(() => {
+                        if (this.isWaitingResponse && this.pendingAction && this.node && this.node.isValid) {
+                            if (this.loadingLabel?.node) {
+                                this.loadingLabel.string = "请求超时，点击重试";
+                                this.loadingLabel.active = true;
+                            }
+                            if (this.btnClose) this.btnClose.active = true;
+                            this.isWaitingResponse = false;
+                        }
+                    }, 5000);
+                }
+            }, 600);
+        }
+    }
+
+    private _clearLoadingTimer() {
+        if (this.loadingTimer) {
+            clearTimeout(this.loadingTimer);
+            this.loadingTimer = null;
+        }
+    }
+
+    private _cleanup() {
+        this._clearLoadingTimer();
+        this.isWaitingResponse = false;
+        this.pendingAction = null;
+        NetworkManager.instance.eventTarget.off('areaSettlementStart', this._onSettlementResponse, this);
+        NetworkManager.instance.eventTarget.off('settlementComplete', this._onSettlementResponse, this);
+        NetworkManager.instance.eventTarget.off('error', this._onError, this);
     }
 }

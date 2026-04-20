@@ -20,7 +20,6 @@ export class GameView extends Component {
     @property(Label) public seaweedLabel: Label = null;
     @property(Label) public cagesLabel: Label = null;
     @property(Label) public tributeCardsLabel: Label = null;
-    @property(Label) public buffsLabel: Label = null;
 
     @property(Prefab) public slotPrefab: Prefab = null;
     @property(Prefab) public popupPrefab: Prefab = null;
@@ -197,18 +196,6 @@ export class GameView extends Component {
                 } else {
                     this.tributeCardsLabel.string = '📜 上供卡：无';
                     this.tributeCardsLabel.node.active = true;
-                }
-            }
-            
-            // ========== 新增：光环列表 ==========
-            if (this.buffsLabel) {
-                const buffs = me.permaBuffs || [];
-                if (buffs.length > 0) {
-                    this.buffsLabel.string = '✨ 生效中';
-                    this.buffsLabel.node.active = true;
-                } else {
-                    this.buffsLabel.string = '✨ 无';
-                    this.buffsLabel.node.active = true;
                 }
             }
         }
