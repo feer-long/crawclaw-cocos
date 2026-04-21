@@ -28,6 +28,19 @@ export class TributePopup extends Component {
     @property(Button) public btnConfirm: Button = null;
     @property(Button) public btnSkip: Button = null;
 
+    @property(Button) public btnBuyGrade3: Button = null;
+    @property(Button) public btnBuyGrade2: Button = null;
+    @property(Button) public btnBuyGrade1: Button = null;
+    @property(Button) public btnDiscardLobster: Button = null;
+    @property(Button) public btnDiscardCage: Button = null;
+    @property(Node) public waitingChoiceNode: Node = null;
+    @property(Label) public waitingChoiceLabel: Label = null;
+
+    private isWaitingChoice: boolean = false;
+    private pendingChoiceTaskId: string | null = null;
+    private pendingChoiceType: string | null = null;
+    private choiceOptions: any[] = [];
+
     private rawData: any = null;
     private player: any = null;
     private taverns: any[] = [];
@@ -60,11 +73,40 @@ export class TributePopup extends Component {
         this.rewardChoice = 'de';
         this.bonusChoice = 'de';
         this.reqLobsterCount = 0;
+        this.isWaitingChoice = false;
+        this.pendingChoiceTaskId = null;
+        this.pendingChoiceType = null;
+        this.choiceOptions = [];
+
+        this._cleanupChoiceUI();
 
         this.buildInventory();
         this.renderTaverns();
         this.renderInventory();
         this.refreshUI();
+        
+        NetworkManager.instance.eventTarget.on('tributeChoiceRequired', this._onTributeChoiceRequired, this);
+        NetworkManager.instance.eventTarget.on('error', this._onError, this);
+    }
+    
+    private _cleanupChoiceUI() {
+        try {
+            if (this.waitingChoiceNode) {
+                this.waitingChoiceNode.active = false;
+            }
+            if (this.waitingChoiceLabel) {
+                this.waitingChoiceLabel.string = "";
+            }
+            if (this.btnBuyGrade3 && this.btnBuyGrade3.node) this.btnBuyGrade3.node.active = false;
+            if (this.btnBuyGrade2 && this.btnBuyGrade2.node) this.btnBuyGrade2.node.active = false;
+            if (this.btnBuyGrade1 && this.btnBuyGrade1.node) this.btnBuyGrade1.node.active = false;
+            if (this.btnDiscardLobster && this.btnDiscardLobster.node) this.btnDiscardLobster.node.active = false;
+            if (this.btnDiscardCage && this.btnDiscardCage.node) this.btnDiscardCage.node.active = false;
+            if (this.btnConfirm && this.btnConfirm.node) this.btnConfirm.node.active = true;
+            if (this.btnSkip && this.btnSkip.node) this.btnSkip.node.active = true;
+        } catch (e) {
+            console.error('清理选择 UI 时出错:', e);
+        }
     }
 
     private buildInventory() {
@@ -474,7 +516,12 @@ export class TributePopup extends Component {
             }
         }
 
-        this.btnConfirm.interactable = canConfirm;
+        if (this.isWaitingChoice) {
+            this.hintLabel.string = "⏳ 等待选择结果...";
+            this.btnConfirm.interactable = false;
+        } else {
+            this.btnConfirm.interactable = canConfirm;
+        }
     }
 
     public onBtnToggleNakedClicked() {
@@ -534,5 +581,160 @@ export class TributePopup extends Component {
         NetworkManager.instance.send('clientGameAction', 'areaAction', {
             payload: { actionType: 'skip', payload: {} }
         });
+    }
+    
+    private _onTributeChoiceRequired = (data: any) => {
+        console.log('🎁 收到服务器 tributeChoiceRequired 数据:', data);
+        const payload = data.data || data;
+        console.log('🎁 parsed payload:', payload);
+        
+        if (payload.playerId !== this.player.id) {
+            console.log('❌ playerId 不匹配:', payload.playerId, 'vs', this.player.id);
+            return;
+        }
+        
+        this.isWaitingChoice = true;
+        this.pendingChoiceTaskId = payload.taskId;
+        this.pendingChoiceType = payload.choiceType;
+        this.choiceOptions = payload.options || [];
+        
+        console.log('✅ 保存的选择信息:', {
+            taskId: this.pendingChoiceTaskId,
+            choiceType: this.pendingChoiceType,
+            options: this.choiceOptions
+        });
+        
+        if (this.btnConfirm && this.btnConfirm.node) this.btnConfirm.node.active = false;
+        if (this.btnSkip && this.btnSkip.node) this.btnSkip.node.active = false;
+        
+        if (this.waitingChoiceNode) {
+            this.waitingChoiceNode.active = true;
+        }
+        
+        if (this.pendingChoiceType === 'buy_advanced_lobster') {
+            if (this.btnBuyGrade3 && this.btnBuyGrade3.node) this.btnBuyGrade3.node.active = false;
+            if (this.btnBuyGrade2 && this.btnBuyGrade2.node) this.btnBuyGrade2.node.active = false;
+            if (this.btnBuyGrade1 && this.btnBuyGrade1.node) this.btnBuyGrade1.node.active = false;
+            
+            this.choiceOptions.forEach(opt => {
+                if (opt.grade === 'grade3' && this.btnBuyGrade3 && this.btnBuyGrade3.node) {
+                    this.btnBuyGrade3.node.active = true;
+                }
+                if (opt.grade === 'grade2' && this.btnBuyGrade2 && this.btnBuyGrade2.node) {
+                    this.btnBuyGrade2.node.active = true;
+                }
+                if (opt.grade === 'grade1' && this.btnBuyGrade1 && this.btnBuyGrade1.node) {
+                    this.btnBuyGrade1.node.active = true;
+                }
+            });
+            
+            if (this.waitingChoiceLabel) {
+                this.waitingChoiceLabel.string = "🎁 上供触发效果：请选择购买高级龙虾的品级";
+            }
+        } else if (this.pendingChoiceType === 'discard_attack') {
+            if (this.btnDiscardLobster && this.btnDiscardLobster.node) this.btnDiscardLobster.node.active = true;
+            if (this.btnDiscardCage && this.btnDiscardCage.node) this.btnDiscardCage.node.active = true;
+            
+            if (this.waitingChoiceLabel) {
+                this.waitingChoiceLabel.string = "🎁 上供触发效果：请选择其他玩家弃置的资源类型";
+            }
+        }
+    }
+    
+    public onBtnBuyGrade3Clicked() {
+        this._submitChoice('grade3', 1);
+    }
+    
+    public onBtnBuyGrade2Clicked() {
+        this._submitChoice('grade2', 2);
+    }
+    
+    public onBtnBuyGrade1Clicked() {
+        this._submitChoice('grade1', 3);
+    }
+    
+    public onBtnDiscardLobsterClicked() {
+        this._submitChoice('discard', 'lobster');
+    }
+    
+    public onBtnDiscardCageClicked() {
+        this._submitChoice('discard', 'cage');
+    }
+    
+    private _submitChoice(action: string, gradeCost: number | string | null) {
+        if (!this.pendingChoiceTaskId) {
+            console.error('❌ 没有待处理的选择任务 ID');
+            return;
+        }
+        
+        this._hideChoiceUI();
+        
+        const choicePayload: any = { action };
+        
+        if (action === 'discard') {
+            choicePayload.targetType = gradeCost;
+        } else {
+            choicePayload.grade = action;
+            choicePayload.cost = gradeCost as number;
+        }
+        
+        console.log('📤 提交上供选择:', { taskId: this.pendingChoiceTaskId, choice: choicePayload });
+        
+        NetworkManager.instance.send('clientGameAction', 'submitTributeChoice', {
+            payload: {
+                taskId: this.pendingChoiceTaskId,
+                choice: choicePayload
+            }
+        });
+    }
+    
+    private _hideChoiceUI() {
+        this.isWaitingChoice = false;
+        this.pendingChoiceType = null;
+        this.choiceOptions = [];
+        
+        this._cleanupChoiceUI();
+    }
+    
+    private _onError = (data: any) => {
+        if (data.code === 'DUPLICATE_REQUEST' && this.pendingChoiceTaskId) {
+            setTimeout(() => {
+                if (this.pendingChoiceTaskId && this.pendingChoiceType && this.choiceOptions) {
+                    let choice: any = { action: 'retry' };
+                    if (this.pendingChoiceType === 'discard_attack') {
+                        choice = { action: 'discard', targetType: 'lobster' };
+                    } else if (this.pendingChoiceType === 'buy_advanced_lobster' && this.choiceOptions[0]) {
+                        // 默认选择第一个选项
+                        choice = this.choiceOptions[0];
+                        choice.action = choice.grade;
+                    }
+                    console.log('🔄 重试上供选择:', { taskId: this.pendingChoiceTaskId, choice });
+                    NetworkManager.instance.send('clientGameAction', 'areaAction', {
+                        payload: {
+                            actionType: 'submitTributeChoice',
+                            payload: {
+                                taskId: this.pendingChoiceTaskId,
+                                choice: choice
+                            }
+                        }
+                    });
+                }
+            }, 600);
+        }
+    }
+    
+    protected onDestroy() {
+        this._cleanup();
+        // 清空所有 pending 状态
+        this.isWaitingChoice = false;
+        this.pendingChoiceTaskId = null;
+        this.pendingChoiceType = null;
+        this.choiceOptions = [];
+        this._cleanupChoiceUI();
+    }
+    
+    private _cleanup() {
+        NetworkManager.instance.eventTarget.off('tributeChoiceRequired', this._onTributeChoiceRequired, this);
+        NetworkManager.instance.eventTarget.off('error', this._onError, this);
     }
 }
