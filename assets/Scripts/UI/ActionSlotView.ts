@@ -77,12 +77,12 @@ export class ActionSlotView extends Component {
                 if (index === 3) { reward = ""; count = "3"; }
                 break;
             case 'tribute':
-                if (index === 3) { reward = ""; count = "1"; }
-                if (index === 4) { reward = ""; count = "1"; }
-                if (index === 5) { reward = "第4回合+"; count = "1"; }
-                if (index === 0) { reward = "⚔️斗正上方"; count = "1"; }
-                if (index === 1) { reward = "⚔️斗正上方"; count = "1"; }
-                if (index === 2) { reward = "⚔️斗正上方"; count = "1"; }
+                if (index === 0) { reward = ""; count = "1"; }
+                if (index === 1) { reward = ""; count = "1"; }
+                if (index === 2) { reward = "第4回合+"; count = "1"; }
+                if (index === 3) { reward = "⚔️斗正上方"; count = "1"; }
+                if (index === 4) { reward = "⚔️斗正上方"; count = "1"; }
+                if (index === 5) { reward = "⚔️斗正上方"; count = "1"; }
                 if (index === 6) { reward = ""; count = "1"; }
                 if (index === 7) { reward = ""; count = "1"; }
                 break;

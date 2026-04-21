@@ -1,4 +1,4 @@
-import { _decorator, Component, Label, Node, Prefab, instantiate, Button } from 'cc';
+import { _decorator, Component, Label, Node, Prefab, instantiate, Button, profiler } from 'cc';
 import { NetworkManager } from '../Network/NetworkManager';
 import { ActionSlotView } from './ActionSlotView';
 import { SettlementPopup } from './SettlementPopup';
@@ -6,6 +6,8 @@ import { MarketPopup } from './MarketPopup';
 import { BreedingPopup } from './BreedingPopup';
 import { MarketplacePopup } from './MarketplacePopup';
 import { TributePopup } from './TributePopup';
+import { BattlePopup } from './BattlePopup';
+import { LobsterSelectPopup } from './LobsterSelectPopup';
 const { ccclass, property } = _decorator;
 
 @ccclass('GameView')
@@ -29,6 +31,9 @@ export class GameView extends Component {
     @property(Prefab) public marketplacePopupPrefab: Prefab = null;
     @property(Prefab) public tributePopupPrefab: Prefab = null;
 
+    @property(Prefab) public lobsterSelectPopupPrefab: Prefab = null;
+    @property(Prefab) public battlePopupPrefab: Prefab = null;
+
     @property(Node) public areaShrimp: Node = null;
     @property(Node) public areaMarket: Node = null;
     @property(Node) public areaBreeding: Node = null;
@@ -37,15 +42,15 @@ export class GameView extends Component {
     @property(Node) public areaDowntown: Node = null;
     @property(Node) public btnNextPlayer: Node = null;
 
-
     private localPlayerId: number = -1;
     private currentTurnPlayerIndex: number = -1;
     private currentTurnPhase: string = "";
     private turnStartLiZhang: number = -1;
     private currentPopupNode: Node = null;
 
-
     onLoad() {
+        profiler.hideStats();
+
         NetworkManager.instance.eventTarget.on('gameStateUpdate', this.onStateChanged, this);
         NetworkManager.instance.eventTarget.on('playerResourceUpdate', this.onStateChanged, this);
         NetworkManager.instance.eventTarget.on('serverGameAction', this.onStateChanged, this);
@@ -53,6 +58,9 @@ export class GameView extends Component {
         NetworkManager.instance.eventTarget.on('areaSettlementStart', this.onAreaSettlementStart, this);
         NetworkManager.instance.eventTarget.on('areaWaitingUI', this.onAreaWaitingUI, this);
         NetworkManager.instance.eventTarget.on('settlementComplete', this.onSettlementComplete, this);
+        NetworkManager.instance.eventTarget.on('battleStart', this.onBattleEvent, this);
+        NetworkManager.instance.eventTarget.on('battleUpdate', this.onBattleEvent, this);
+        NetworkManager.instance.eventTarget.on('battleEnded', this.onBattleEvent, this);
 
         const pIdStr = cc.sys.localStorage.getItem('localPlayerId');
         if (pIdStr !== null) {
@@ -69,6 +77,57 @@ export class GameView extends Component {
         NetworkManager.instance.eventTarget.off('areaSettlementStart', this.onAreaSettlementStart, this);
         NetworkManager.instance.eventTarget.off('areaWaitingUI', this.onAreaWaitingUI, this);
         NetworkManager.instance.eventTarget.off('settlementComplete', this.onSettlementComplete, this);
+        NetworkManager.instance.eventTarget.off('battleStart', this.onBattleEvent, this);
+        NetworkManager.instance.eventTarget.off('battleUpdate', this.onBattleEvent, this);
+        NetworkManager.instance.eventTarget.off('battleEnded', this.onBattleEvent, this);
+    }
+
+    private onBattleEvent(data: any) {
+        const actionType = data.actionType;
+
+        if (actionType === 'battleStart') {
+            if (data.battleQueue) {
+                this.showBattlePopup('LobsterSelectPopup', this.lobsterSelectPopupPrefab, data);
+            }
+            else if (data.battleData) {
+                this.showBattlePopup('BattlePopup', this.battlePopupPrefab, data.battleData);
+            }
+        }
+        else if (actionType === 'battleUpdate') {
+            if (this.currentPopupNode && this.currentPopupNode.name === 'BattlePopup') {
+                this.currentPopupNode.getComponent(BattlePopup)?.updateBattleState(data.battleData);
+            }
+        }
+        else if (actionType === 'battleEnded') {
+            // ==========================================
+            // 【核心修复】：立即切断指针引用！防止卡死！
+            // ==========================================
+            const popupToClose = this.currentPopupNode;
+            this.currentPopupNode = null;
+
+            setTimeout(() => {
+                if (popupToClose && popupToClose.isValid) {
+                    popupToClose.destroy();
+                }
+            }, 1500);
+        }
+    }
+
+    private showBattlePopup(name: string, prefab: Prefab, initData: any) {
+        if (!prefab) return;
+
+        if (this.currentPopupNode && this.currentPopupNode.isValid) {
+            this.currentPopupNode.destroy();
+        }
+
+        this.currentPopupNode = instantiate(prefab);
+        this.currentPopupNode.name = name;
+        this.node.addChild(this.currentPopupNode);
+
+        const comp = this.currentPopupNode.getComponent(name);
+        if (comp) {
+            (comp as any).init(initData);
+        }
     }
 
     private onError(data: any) {
@@ -93,19 +152,16 @@ export class GameView extends Component {
         const isDoneBroadcast = (data.step === 'done' && data.playerId === null);
 
         if (isForMe || isDoneBroadcast) {
-            let targetPrefab = this.popupPrefab; // 默认
+            let targetPrefab = this.popupPrefab;
             if (data.areaType === 'seafood_market') targetPrefab = this.marketPopupPrefab;
             if (data.areaType === 'breeding') targetPrefab = this.breedingPopupPrefab;
             if (data.areaType === 'marketplace') targetPrefab = this.marketplacePopupPrefab;
-
-            // 【新增】：指定上供区面板！
             if (data.areaType === 'tribute') targetPrefab = this.tributePopupPrefab;
 
             if (this.currentPopupNode && this.currentPopupNode.isValid) {
                 const isMarket = this.currentPopupNode.getComponent('MarketPopup') !== null;
                 const isBreeding = this.currentPopupNode.getComponent('BreedingPopup') !== null;
                 const isMarketplace = this.currentPopupNode.getComponent('MarketplacePopup') !== null;
-                // 【新增】：检查当前是不是上供面板
                 const isTribute = this.currentPopupNode.getComponent('TributePopup') !== null;
 
                 const needMarket = (data.areaType === 'seafood_market');
@@ -113,9 +169,11 @@ export class GameView extends Component {
                 const needMarketplace = (data.areaType === 'marketplace');
                 const needTribute = (data.areaType === 'tribute');
 
-                if (isMarket !== needMarket || isBreeding !== needBreeding || isMarketplace !== needMarketplace || isTribute !== needTribute) {
-                    this.currentPopupNode.destroy();
-                    this.currentPopupNode = null;
+                if (this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !== 'LobsterSelectPopup') {
+                    if (isMarket !== needMarket || isBreeding !== needBreeding || isMarketplace !== needMarketplace || isTribute !== needTribute) {
+                        this.currentPopupNode.destroy();
+                        this.currentPopupNode = null;
+                    }
                 }
             }
 
@@ -135,9 +193,8 @@ export class GameView extends Component {
                     } else if (data.areaType === 'marketplace') {
                         this.currentPopupNode.getComponent('MarketplacePopup')?.init(data);
                     } else if (data.areaType === 'tribute') {
-                        // 【新增】：初始化上供面板
                         this.currentPopupNode.getComponent('TributePopup')?.init(data);
-                    } else {
+                    } else if (this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !== 'LobsterSelectPopup') {
                         this.currentPopupNode.getComponent('SettlementPopup')?.init(data);
                     }
                 }
@@ -146,7 +203,7 @@ export class GameView extends Component {
 
         if (data.playerId !== null && data.playerId != this.localPlayerId) {
             this.phaseLabel.string = `结算阶段：等待 玩家 ${data.playerId} 操作...`;
-            if (this.currentPopupNode && this.currentPopupNode.isValid) {
+            if (this.currentPopupNode && this.currentPopupNode.isValid && this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !== 'LobsterSelectPopup') {
                 this.currentPopupNode.destroy();
                 this.currentPopupNode = null;
             }
@@ -184,33 +241,6 @@ export class GameView extends Component {
             this.coinsLabel.string = `💰 金币：${me.coins}`;
             this.liZhangLabel.string = `👷 里长：${me.liZhang}`;
             this.lobstersLabel.string = `🦞 龙虾：${me.lobsters.length} 只`;
-            if (this.seaweedLabel) this.seaweedLabel.string = `🌿 海草：${me.seaweed || 0}`;
-            if (this.cagesLabel) this.cagesLabel.string = `🛒 虾笼：${me.cages || 0}`;
-            
-            // ========== 新增：上供卡列表 ==========
-            if (this.tributeCardsLabel) {
-                const cards = me.tributeCards || [];
-                if (cards.length > 0) {
-                    const names = cards.map((c: any) => c.name).join(' | ');
-                    this.tributeCardsLabel.string = `📜 上供卡：${names}`;
-                    this.tributeCardsLabel.node.active = true;
-                } else {
-                    this.tributeCardsLabel.string = '📜 上供卡：无';
-                    this.tributeCardsLabel.node.active = true;
-                }
-            }
-            
-            // ========== 新增：光环列表 ==========
-            if (this.buffsLabel) {
-                const buffs = me.permaBuffs || [];
-                if (buffs.length > 0) {
-                    this.buffsLabel.string = '✨ 生效中';
-                    this.buffsLabel.node.active = true;
-                } else {
-                    this.buffsLabel.string = '✨ 无';
-                    this.buffsLabel.node.active = true;
-                }
-            }
         }
 
         if (gameState.currentPlayerIndex !== this.currentTurnPlayerIndex || gameState.phase !== this.currentTurnPhase) {
@@ -255,10 +285,13 @@ export class GameView extends Component {
             this.renderArea(gameState.areas.shrimp_catching, this.areaShrimp, 'shrimp_catching', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn);
             this.renderArea(gameState.areas.seafood_market, this.areaMarket, 'seafood_market', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn);
             this.renderArea(gameState.areas.breeding, this.areaBreeding, 'breeding', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn);
+
             const tributeData = gameState.areas.tribute;
             if (tributeData) {
-                this.renderArea(tributeData, this.areaTributeChallenge, 'tribute', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, [3, 4, 5]);
-                this.renderArea(tributeData, this.areaTributeNormal, 'tribute', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, [0, 1, 2, 6, 7]);
+                // 第一行绑定防守方槽位: [0, 1, 2]
+                this.renderArea(tributeData, this.areaTributeNormal, 'tribute', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, [0, 1, 2]);
+                // 第二行绑定挑战方槽位: [3, 4, 5, 6, 7]
+                this.renderArea(tributeData, this.areaTributeChallenge, 'tribute', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, [3, 4, 5, 6, 7]);
             }
             this.renderArea(gameState.areas.marketplace, this.areaDowntown, 'marketplace', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn);
         }

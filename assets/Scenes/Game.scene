@@ -107,7 +107,7 @@
     "_prefab": null,
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": 375.00000000000006,
+      "x": 375,
       "y": 667,
       "z": 0
     },
@@ -288,7 +288,7 @@
     "__prefab": null,
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 750.0000000000001,
+      "width": 750,
       "height": 1334
     },
     "_anchorPoint": {
@@ -2644,7 +2644,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "Area_tribute_challenge",
+    "_name": "Area_tribute_normal",
     "_objFlags": 0,
     "__editorExtras__": {},
     "_parent": {
@@ -2688,7 +2688,7 @@
       "y": 0,
       "z": 0
     },
-    "_id": "f5RhKobdNBCpo2d2pcgrWS"
+    "_id": "28FLN+5DlPcqYtiAIbzD2L"
   },
   {
     "__type__": "cc.UITransform",
@@ -2710,7 +2710,7 @@
       "x": 0.5,
       "y": 0.5
     },
-    "_id": "daM/bZub1ERI1VDGOcEPjx"
+    "_id": "cckPzkBj5EwKzbVfsYD3KF"
   },
   {
     "__type__": "cc.Layout",
@@ -2742,11 +2742,11 @@
     "_constraintNum": 2,
     "_affectedByScale": false,
     "_isAlign": false,
-    "_id": "caOrFGrstGWbmfD34VJnH2"
+    "_id": "26HIzNIWxDbaPZFoFxFXIN"
   },
   {
     "__type__": "cc.Node",
-    "_name": "Area_tribute_normal",
+    "_name": "Area_tribute_challenge",
     "_objFlags": 0,
     "__editorExtras__": {},
     "_parent": {
@@ -2790,7 +2790,7 @@
       "y": 0,
       "z": 0
     },
-    "_id": "28FLN+5DlPcqYtiAIbzD2L"
+    "_id": "f5RhKobdNBCpo2d2pcgrWS"
   },
   {
     "__type__": "cc.UITransform",
@@ -2812,7 +2812,7 @@
       "x": 0.5,
       "y": 0.5
     },
-    "_id": "cckPzkBj5EwKzbVfsYD3KF"
+    "_id": "daM/bZub1ERI1VDGOcEPjx"
   },
   {
     "__type__": "cc.Layout",
@@ -2844,7 +2844,7 @@
     "_constraintNum": 2,
     "_affectedByScale": false,
     "_isAlign": false,
-    "_id": "26HIzNIWxDbaPZFoFxFXIN"
+    "_id": "caOrFGrstGWbmfD34VJnH2"
   },
   {
     "__type__": "cc.UITransform",
@@ -3526,7 +3526,7 @@
     "__prefab": null,
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 750.0000000000001,
+      "width": 750,
       "height": 1334
     },
     "_anchorPoint": {
@@ -3616,6 +3616,8 @@
     "cagesLabel": {
       "__id__": 37
     },
+    "tributeCardsLabel": null,
+    "buffsLabel": null,
     "slotPrefab": {
       "__uuid__": "19e31fe9-b21e-4c5d-af2d-53e36f299bf8",
       "__expectedType__": "cc.Prefab"
@@ -3640,6 +3642,14 @@
       "__uuid__": "6ca1d72f-c212-40de-80ef-3fa53528c7e1",
       "__expectedType__": "cc.Prefab"
     },
+    "lobsterSelectPopupPrefab": {
+      "__uuid__": "fcbc3ef7-4ec8-4ba0-876d-cc0d32a6c05b",
+      "__expectedType__": "cc.Prefab"
+    },
+    "battlePopupPrefab": {
+      "__uuid__": "1c301e7d-1d68-467f-9e37-2ac2e4636c13",
+      "__expectedType__": "cc.Prefab"
+    },
     "areaShrimp": {
       "__id__": 44
     },
@@ -3650,10 +3660,10 @@
       "__id__": 56
     },
     "areaTributeChallenge": {
-      "__id__": 63
+      "__id__": 66
     },
     "areaTributeNormal": {
-      "__id__": 66
+      "__id__": 63
     },
     "areaDowntown": {
       "__id__": 74
