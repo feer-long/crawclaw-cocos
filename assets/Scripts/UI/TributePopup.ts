@@ -680,10 +680,13 @@ export class TributePopup extends Component {
         
         console.log('📤 提交上供选择:', { taskId: this.pendingChoiceTaskId, choice: choicePayload });
         
-        NetworkManager.instance.send('clientGameAction', 'submitTributeChoice', {
-            payload: {
-                taskId: this.pendingChoiceTaskId,
-                choice: choicePayload
+        NetworkManager.instance.send('clientGameAction', 'areaAction', {
+            payload:{
+                actionType: 'submitTributeChoice',
+                payload: {
+                    taskId: this.pendingChoiceTaskId,
+                    choice: choicePayload
+                }
             }
         });
     }
@@ -709,8 +712,8 @@ export class TributePopup extends Component {
                         choice.action = choice.grade;
                     }
                     console.log('🔄 重试上供选择:', { taskId: this.pendingChoiceTaskId, choice });
-                    NetworkManager.instance.send('clientGameAction', 'areaAction', {
-                        payload: {
+                    NetworkManager.instance.send('clientGameAction', 'submitTributeChoice', {
+                        payload:{
                             actionType: 'submitTributeChoice',
                             payload: {
                                 taskId: this.pendingChoiceTaskId,
