@@ -109,31 +109,18 @@ export class ResultPopup extends Component {
         const tavernScores: number[] = [];
         let tavernTotal = 0;
 
-        // 优先查看玩家身上是否直接存了 tavernScores (有些后端的写法)
-        if (player.tavernScores && player.tavernScores.length > 0) {
-            for (let i = 0; i < 6; i++) {
-                const score = player.tavernScores[i] || 0;
-                tavernScores.push(score);
-                tavernTotal += score;
-            }
-        } else {
-            // 【核心修复2】：去 areas.tribute.taverns 中找真正的酒楼席位数组！
-            const taverns = gameState.areas?.tribute?.taverns || gameState.taverns || [];
+        const tavernCompletionOrder = gameState.tavernCompletionOrder || {};
+        const scoreMap = [3, 2, 1, 0];
 
-            for (let i = 0; i < 6; i++) {
-                let score = 0;
-                if (i < taverns.length) {
-                    const tavern = taverns[i];
-                    // 检查这名玩家在这家酒楼里排第几位
-                    if (tavern && tavern.occupants) {
-                        const rank = tavern.occupants.findIndex((occ: any) => Number(occ) === Number(player.id));
-                        if (rank !== -1) {
-                            score = [3, 2, 1, 0][rank] || 0; // 先到先得：3分, 2分, 1分, 0分
-                        }
-                    }
+        for (const key in tavernCompletionOrder) {
+            const list = tavernCompletionOrder[key];
+            if (Array.isArray(list)) {
+                const rank = list.findIndex((pid: any) => Number(pid) === Number(player.id));
+                if (rank !== -1) {
+                    const score = scoreMap[rank] || 0;
+                    tavernScores.push(score);
+                    tavernTotal += score;
                 }
-                tavernScores.push(score);
-                tavernTotal += score;
             }
         }
 
