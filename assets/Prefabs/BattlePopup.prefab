@@ -1644,10 +1644,7 @@
       "b": 255,
       "a": 255
     },
-    "_spriteFrame": {
-      "__uuid__": "0360dd23-74e6-4dca-9617-b71f8ae7bbb2@f9941",
-      "__expectedType__": "cc.SpriteFrame"
-    },
+    "_spriteFrame": null,
     "_type": 0,
     "_fillType": 0,
     "_sizeMode": 0,
@@ -2832,10 +2829,7 @@
       "b": 255,
       "a": 255
     },
-    "_spriteFrame": {
-      "__uuid__": "d0149442-d883-49ff-9b3d-eac608592dfb@f9941",
-      "__expectedType__": "cc.SpriteFrame"
-    },
+    "_spriteFrame": null,
     "_type": 0,
     "_fillType": 0,
     "_sizeMode": 0,
@@ -7304,7 +7298,7 @@
       "__id__": 54
     },
     "leftDiceNode": {
-      "__id__": 57
+      "__id__": 60
     },
     "leftCardContainer": {
       "__id__": 63
@@ -7322,7 +7316,7 @@
       "__id__": 102
     },
     "rightDiceNode": {
-      "__id__": 105
+      "__id__": 108
     },
     "rightCardContainer": {
       "__id__": 111

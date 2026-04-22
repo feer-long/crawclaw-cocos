@@ -1,4 +1,4 @@
-import { _decorator, Component, Label, Button, Node, instantiate, Sprite, tween, Vec3, RichText, ScrollView, Color, UIOpacity, UITransform } from 'cc';
+import { _decorator, Component, Label, Button, Node, instantiate, Sprite, tween, Vec3, RichText, ScrollView, Color, UIOpacity, UITransform, resources, SpriteFrame } from 'cc';
 import { NetworkManager } from '../Network/NetworkManager';
 const { ccclass, property } = _decorator;
 
@@ -11,14 +11,14 @@ export class BattlePopup extends Component {
     @property(Label) public leftLobsterLabel: Label = null;
     @property(Label) public leftDmgLabel: Label = null;
     @property(Label) public leftCritLabel: Label = null;
-    @property(Node) public leftDiceNode: Node = null;
+    @property(Sprite) public leftDiceNode: Sprite = null;
     @property(Node) public leftCardContainer: Node = null;
 
     @property(Label) public rightNameLabel: Label = null;
     @property(Label) public rightLobsterLabel: Label = null;
     @property(Label) public rightDmgLabel: Label = null;
     @property(Label) public rightCritLabel: Label = null;
-    @property(Node) public rightDiceNode: Node = null;
+    @property(Sprite) public rightDiceNode: Sprite = null;
     @property(Node) public rightCardContainer: Node = null;
 
     @property(Node) public hpCardTemplate: Node = null;
@@ -98,6 +98,13 @@ export class BattlePopup extends Component {
         this.rightLobsterLabel.string = `${p2.lobsterName} (${p2.diceType}面骰)`;
         this.rightDmgLabel.string = `累计受伤: ${p2.dmgTaken}`;
         this.rightCritLabel.string = `暴击率: ${Math.min(100, p2.dmgTaken * 20)}%`;
+
+        if (this.leftDiceNode) {
+            this.setDiceImage(this.leftDiceNode, p1.diceType);
+        }
+        if (this.rightDiceNode) {
+            this.setDiceImage(this.rightDiceNode, p2.diceType);
+        }
 
         this.btnRoll.node.active = false;
         this.btnEatWeed.node.active = false;
@@ -242,6 +249,19 @@ export class BattlePopup extends Component {
             .start();
 
         tween(uiOp).delay(1.0).to(0.5, { opacity: 0 }).start();
+    }
+
+    private setDiceImage(diceNode: Sprite, diceType: number) {
+        const imagePath = `dice_d${diceType}/spriteFrame`;
+        resources.load(imagePath, SpriteFrame, (err, spriteFrame) => {
+            if (err) {
+                console.error(`[BattlePopup] Failed to load ${imagePath}:`, err);
+                return;
+            }
+            if (diceNode) {
+                diceNode.spriteFrame = spriteFrame;
+            }
+        });
     }
 
     private addLog(msg: string) {
