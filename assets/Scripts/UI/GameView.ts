@@ -8,6 +8,7 @@ import { MarketplacePopup } from './MarketplacePopup';
 import { TributePopup } from './TributePopup';
 import { BattlePopup } from './BattlePopup';
 import { LobsterSelectPopup } from './LobsterSelectPopup';
+import { ResultPopup } from './ResultPopup';
 const { ccclass, property } = _decorator;
 
 @ccclass('GameView')
@@ -22,6 +23,7 @@ export class GameView extends Component {
     @property(Label) public seaweedLabel: Label = null;
     @property(Label) public cagesLabel: Label = null;
     @property(Label) public tributeCardsLabel: Label = null;
+    @property(Label) public buffsLabel: Label = null;
 
     @property(Prefab) public slotPrefab: Prefab = null;
     @property(Prefab) public popupPrefab: Prefab = null;
@@ -32,6 +34,7 @@ export class GameView extends Component {
 
     @property(Prefab) public lobsterSelectPopupPrefab: Prefab = null;
     @property(Prefab) public battlePopupPrefab: Prefab = null;
+    @property(Prefab) public resultPopupPrefab: Prefab = null;
 
     @property(Node) public areaShrimp: Node = null;
     @property(Node) public areaMarket: Node = null;
@@ -46,9 +49,11 @@ export class GameView extends Component {
     private currentTurnPhase: string = "";
     private turnStartLiZhang: number = -1;
     private currentPopupNode: Node = null;
+    private isGameFinished: boolean = false;
 
     onLoad() {
         profiler.hideStats();
+        this.isGameFinished = false;
 
         NetworkManager.instance.eventTarget.on('gameStateUpdate', this.onStateChanged, this);
         NetworkManager.instance.eventTarget.on('playerResourceUpdate', this.onStateChanged, this);
@@ -60,6 +65,7 @@ export class GameView extends Component {
         NetworkManager.instance.eventTarget.on('battleStart', this.onBattleEvent, this);
         NetworkManager.instance.eventTarget.on('battleUpdate', this.onBattleEvent, this);
         NetworkManager.instance.eventTarget.on('battleEnded', this.onBattleEvent, this);
+        NetworkManager.instance.eventTarget.on('gameEnded', this.onGameEnded, this);
 
         const pIdStr = cc.sys.localStorage.getItem('localPlayerId');
         if (pIdStr !== null) {
@@ -79,46 +85,57 @@ export class GameView extends Component {
         NetworkManager.instance.eventTarget.off('battleStart', this.onBattleEvent, this);
         NetworkManager.instance.eventTarget.off('battleUpdate', this.onBattleEvent, this);
         NetworkManager.instance.eventTarget.off('battleEnded', this.onBattleEvent, this);
+        NetworkManager.instance.eventTarget.off('gameEnded', this.onGameEnded, this);
+    }
+
+    private onGameEnded(data: any) {
+        if (this.isGameFinished) return;
+        this.isGameFinished = true;
+        this.phaseLabel.string = "🏁 游戏结束！正在进行最终得分结算...";
+
+        if (this.currentPopupNode && this.currentPopupNode.isValid) {
+            this.currentPopupNode.destroy();
+            this.currentPopupNode = null;
+        }
+
+        if (this.resultPopupPrefab) {
+            this.currentPopupNode = instantiate(this.resultPopupPrefab);
+            this.currentPopupNode.name = 'ResultPopup';
+            this.node.addChild(this.currentPopupNode);
+
+            const comp = this.currentPopupNode.getComponent('ResultPopup');
+            if (comp) (comp as any).init(data);
+        } else {
+            console.error("🚨 致命错误：Result Popup Prefab 槽位为空！请在编辑器中连线！");
+        }
     }
 
     private onBattleEvent(data: any) {
         const actionType = data.actionType;
-
         if (actionType === 'battleStart') {
             if (data.battleQueue) {
                 this.showBattlePopup('LobsterSelectPopup', this.lobsterSelectPopupPrefab, data);
-            }
-            else if (data.battleData) {
+            } else if (data.battleData) {
                 this.showBattlePopup('BattlePopup', this.battlePopupPrefab, data.battleData);
             }
-        }
-        else if (actionType === 'battleUpdate') {
+        } else if (actionType === 'battleUpdate') {
             if (this.currentPopupNode && this.currentPopupNode.name === 'BattlePopup') {
                 this.currentPopupNode.getComponent(BattlePopup)?.updateBattleState(data.battleData);
             }
-        }
-        else if (actionType === 'battleEnded') {
-            // ==========================================
-            // 【核心修复】：立即切断指针引用！防止卡死！
-            // ==========================================
+        } else if (actionType === 'battleEnded') {
             const popupToClose = this.currentPopupNode;
             this.currentPopupNode = null;
-
             setTimeout(() => {
-                if (popupToClose && popupToClose.isValid) {
-                    popupToClose.destroy();
-                }
+                if (popupToClose && popupToClose.isValid) popupToClose.destroy();
             }, 1500);
         }
     }
 
     private showBattlePopup(name: string, prefab: Prefab, initData: any) {
         if (!prefab) return;
-
         if (this.currentPopupNode && this.currentPopupNode.isValid) {
             this.currentPopupNode.destroy();
         }
-
         this.currentPopupNode = instantiate(prefab);
         this.currentPopupNode.name = name;
         this.node.addChild(this.currentPopupNode);
@@ -168,7 +185,7 @@ export class GameView extends Component {
                 const needMarketplace = (data.areaType === 'marketplace');
                 const needTribute = (data.areaType === 'tribute');
 
-                if (this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !== 'LobsterSelectPopup') {
+                if (this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !== 'LobsterSelectPopup' && this.currentPopupNode.name !== 'ResultPopup') {
                     if (isMarket !== needMarket || isBreeding !== needBreeding || isMarketplace !== needMarketplace || isTribute !== needTribute) {
                         this.currentPopupNode.destroy();
                         this.currentPopupNode = null;
@@ -193,7 +210,7 @@ export class GameView extends Component {
                         this.currentPopupNode.getComponent('MarketplacePopup')?.init(data);
                     } else if (data.areaType === 'tribute') {
                         this.currentPopupNode.getComponent('TributePopup')?.init(data);
-                    } else if (this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !== 'LobsterSelectPopup') {
+                    } else if (this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !== 'LobsterSelectPopup' && this.currentPopupNode.name !== 'ResultPopup') {
                         this.currentPopupNode.getComponent('SettlementPopup')?.init(data);
                     }
                 }
@@ -202,7 +219,7 @@ export class GameView extends Component {
 
         if (data.playerId !== null && data.playerId != this.localPlayerId) {
             this.phaseLabel.string = `结算阶段：等待 玩家 ${data.playerId} 操作...`;
-            if (this.currentPopupNode && this.currentPopupNode.isValid && this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !== 'LobsterSelectPopup') {
+            if (this.currentPopupNode && this.currentPopupNode.isValid && this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !== 'LobsterSelectPopup' && this.currentPopupNode.name !== 'ResultPopup') {
                 this.currentPopupNode.destroy();
                 this.currentPopupNode = null;
             }
@@ -211,7 +228,7 @@ export class GameView extends Component {
 
     private onSettlementComplete(data: any) {
         this.phaseLabel.string = "本回合结算完成，准备进入下一回合！";
-        if (this.currentPopupNode && this.currentPopupNode.isValid) {
+        if (this.currentPopupNode && this.currentPopupNode.isValid && this.currentPopupNode.name !== 'ResultPopup') {
             this.currentPopupNode.destroy();
             this.currentPopupNode = null;
         }
@@ -221,7 +238,18 @@ export class GameView extends Component {
     private onStateChanged() {
         const stateStr = cc.sys.localStorage.getItem('currentGameState');
         if (stateStr) {
-            this.refreshUI(JSON.parse(stateStr));
+            const gameState = JSON.parse(stateStr);
+
+            // ==========================================
+            // 【终极拦截器】：兼容 waitingEndgameChoice
+            // 第 5 回合最后，只要状态变成了这两个之一，强制切断业务逻辑并拉起结算排行榜！
+            // ==========================================
+            if (gameState.status === 'finished' || gameState.status === 'waitingEndgameChoice') {
+                this.onGameEnded({ gameState: gameState });
+                return;
+            }
+
+            this.refreshUI(gameState);
         }
     }
 
@@ -240,21 +268,6 @@ export class GameView extends Component {
             this.coinsLabel.string = `💰 金币：${me.coins}`;
             this.liZhangLabel.string = `👷 里长：${me.liZhang}`;
             this.lobstersLabel.string = `🦞 龙虾：${me.lobsters.length} 只`;
-            if (this.seaweedLabel) this.seaweedLabel.string = `🌿 海草：${me.seaweed || 0}`;
-            if (this.cagesLabel) this.cagesLabel.string = `🛒 虾笼：${me.cages || 0}`;
-            
-            // ========== 新增：上供卡列表 ==========
-            if (this.tributeCardsLabel) {
-                const cards = me.tributeCards || [];
-                if (cards.length > 0) {
-                    const names = cards.map((c: any) => c.name).join(' | ');
-                    this.tributeCardsLabel.string = `📜 上供卡：${names}`;
-                    this.tributeCardsLabel.node.active = true;
-                } else {
-                    this.tributeCardsLabel.string = '📜 上供卡：无';
-                    this.tributeCardsLabel.node.active = true;
-                }
-            }
         }
 
         if (gameState.currentPlayerIndex !== this.currentTurnPlayerIndex || gameState.phase !== this.currentTurnPhase) {
@@ -302,9 +315,7 @@ export class GameView extends Component {
 
             const tributeData = gameState.areas.tribute;
             if (tributeData) {
-                // 第一行绑定防守方槽位: [0, 1, 2]
                 this.renderArea(tributeData, this.areaTributeNormal, 'tribute', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, [0, 1, 2]);
-                // 第二行绑定挑战方槽位: [3, 4, 5, 6, 7]
                 this.renderArea(tributeData, this.areaTributeChallenge, 'tribute', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, [3, 4, 5, 6, 7]);
             }
             this.renderArea(gameState.areas.marketplace, this.areaDowntown, 'marketplace', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn);

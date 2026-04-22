@@ -40,6 +40,9 @@ export class BreedingPopup extends Component {
     private lobsterBtns: Node[] = [];
     private titleBtns: Node[] = [];
 
+    // 新增：判断是否全满级
+    private hasUpgradeable: boolean = false;
+
     public init(data: any) {
         this.rawData = data;
         this.player = data.player;
@@ -50,6 +53,10 @@ export class BreedingPopup extends Component {
         this.royalCost = null;
         this.royalReward = null;
         this.selectedTitleId = null;
+        this.hasUpgradeable = false;
+
+        // 【核心修复1】：不论什么情况，跳过按钮在初始化时永远保持可点击状态！
+        if (this.btnSkip) this.btnSkip.interactable = true;
 
         this.renderLobsterList();
         this.renderTitleList();
@@ -59,6 +66,7 @@ export class BreedingPopup extends Component {
     private renderLobsterList() {
         this.lobsterBtns.forEach(btn => btn.destroy());
         this.lobsterBtns = [];
+        this.hasUpgradeable = false;
 
         const lobsters = this.player.lobsters || [];
         for (let i = 0; i < lobsters.length; i++) {
@@ -69,15 +77,13 @@ export class BreedingPopup extends Component {
 
             const label = btnNode.getComponentInChildren(Label);
 
-            // ======================================================
-            // 【核心修复】：如果已经是虾王，直接置灰并取消点击事件！
-            // ======================================================
-            if (lobster.grade === 'royal') {
-                if (label) label.string = "👑虾王 (已满级)";
+            if (lobster.grade === 'royal' || lobster.title || lobster.name === '长鳌虾' || lobster.name === '红头紫') {
+                if (label) label.string = `👑${lobster.title || lobster.name || '虾王'}\n(已满级)`;
                 const btn = btnNode.getComponent(Button);
                 if (btn) btn.interactable = false; // 禁用按钮
                 btnNode.getComponent(Sprite).color = new Color(150, 150, 150); // 变灰
             } else {
+                this.hasUpgradeable = true; // 存在可升级的龙虾
                 if (label) label.string = GRADE_NAMES[lobster.grade] || lobster.grade;
                 btnNode.on(Button.EventType.CLICK, () => {
                     this.selectedLobsterIndex = i;
@@ -119,8 +125,17 @@ export class BreedingPopup extends Component {
         this.actionCountLabel.string = `剩余操作次数：${this.rawData.actionCount}`;
         this.resourceLabel.string = `拥有: 💰${this.player.coins} 🌿${this.player.seaweed} 🛒${this.player.cages}`;
 
+        // 【核心修复2】：全满级时的专属友好提示
+        if (!this.hasUpgradeable) {
+            this.previewLabel.string = "🎉 你的所有龙虾都已满级，无可培养，请点击【跳过此行动】！";
+            this.btnConfirm.interactable = false;
+            this.royalPanel.active = false;
+            if (this.titleContainer) this.titleContainer.active = false;
+            if (this.btnToggleSeaweed) this.btnToggleSeaweed.interactable = false;
+            return;
+        }
+
         this.lobsterBtns.forEach((btn, idx) => {
-            // 虾王节点上面已经变灰了，这里只改变可选龙虾的高亮状态
             const interactable = btn.getComponent(Button)?.interactable;
             if (interactable) {
                 btn.getComponent(Sprite).color = (idx === this.selectedLobsterIndex) ? new Color(100, 200, 100) : new Color(220, 220, 220);
@@ -145,7 +160,6 @@ export class BreedingPopup extends Component {
             const lobster = this.player.lobsters[this.selectedLobsterIndex];
             const currentGrade = lobster.grade;
 
-            // 安全兜底
             if (currentGrade === 'royal') {
                 failReason = "虾王已达最高品级，无法继续培养";
                 canConfirm = false;
@@ -216,6 +230,9 @@ export class BreedingPopup extends Component {
             if (failReason) canConfirm = false;
         }
 
+        // ======================================================
+        // 【核心修复3】：本地强制阻断，绝不发导致死锁的包！
+        // ======================================================
         this.btnConfirm.interactable = canConfirm;
         if (!canConfirm && this.selectedLobsterIndex !== -1) {
             this.previewLabel.string += `\n(⚠️ ${failReason})`;
@@ -233,6 +250,9 @@ export class BreedingPopup extends Component {
     public onBtnRewardWangClicked() { this.royalReward = 'wang'; this.refreshUI(); }
 
     public onBtnConfirmClicked() {
+        // 在发包的最后防线，再次验证是否满足条件
+        if (!this.btnConfirm.interactable) return;
+
         this.btnConfirm.interactable = false;
         this.btnSkip.interactable = false;
 

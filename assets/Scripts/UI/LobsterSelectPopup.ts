@@ -2,7 +2,7 @@ import { _decorator, Component, Label, Button, Node, instantiate, Color, Sprite,
 import { NetworkManager } from '../Network/NetworkManager';
 const { ccclass, property } = _decorator;
 
-const GRADE_NAMES: any = { 'normal': '普虾(0分)', 'grade3': '三品(1分)', 'grade2': '二品(2分)', 'grade1': '一品(3分)', 'royal': '👑虾王(4分)' };
+const GRADE_NAMES: any = { 'normal': '普通龙虾', 'grade3': '三品龙虾', 'grade2': '二品龙虾', 'grade1': '一品龙虾', 'royal': '👑皇家龙虾' };
 
 @ccclass('LobsterSelectPopup')
 export class LobsterSelectPopup extends Component {
@@ -201,9 +201,9 @@ export class LobsterSelectPopup extends Component {
                 if (btn) btn.interactable = false;
 
                 if (itemData.isUsed) {
-                    finalString += '\n(已战)';
+                    finalString += '(已战)';
                 } else if (itemData.val < 1) {
-                    finalString += '\n(品不足)';
+                    finalString += '(不够格)';
                 }
             } else {
                 if (btn) btn.interactable = true;
