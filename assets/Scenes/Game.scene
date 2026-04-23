@@ -3754,7 +3754,6 @@
     "tributeCardsLabel": {
       "__id__": 40
     },
-    "buffsLabel": null,
     "slotPrefab": {
       "__uuid__": "19e31fe9-b21e-4c5d-af2d-53e36f299bf8",
       "__expectedType__": "cc.Prefab"
@@ -3789,6 +3788,10 @@
     },
     "resultPopupPrefab": {
       "__uuid__": "4c28135f-557a-414b-99c1-8baca9efc89c",
+      "__expectedType__": "cc.Prefab"
+    },
+    "cardListPopupPrefab": {
+      "__uuid__": "23d6332a-675e-4222-9644-b76a7a5935f7",
       "__expectedType__": "cc.Prefab"
     },
     "areaShrimp": {

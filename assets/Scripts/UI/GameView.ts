@@ -1,4 +1,4 @@
-import { _decorator, Component, Label, Node, Prefab, instantiate, Button, profiler } from 'cc';
+import { _decorator, Component, Label, Node, Prefab, instantiate, Button, profiler, Color } from 'cc';
 import { NetworkManager } from '../Network/NetworkManager';
 import { ActionSlotView } from './ActionSlotView';
 import { SettlementPopup } from './SettlementPopup';
@@ -9,6 +9,7 @@ import { TributePopup } from './TributePopup';
 import { BattlePopup } from './BattlePopup';
 import { LobsterSelectPopup } from './LobsterSelectPopup';
 import { ResultPopup } from './ResultPopup';
+import { CardListPopup } from './CardListPopup';
 const { ccclass, property } = _decorator;
 
 @ccclass('GameView')
@@ -34,6 +35,7 @@ export class GameView extends Component {
     @property(Prefab) public lobsterSelectPopupPrefab: Prefab = null;
     @property(Prefab) public battlePopupPrefab: Prefab = null;
     @property(Prefab) public resultPopupPrefab: Prefab = null;
+    @property(Prefab) public cardListPopupPrefab: Prefab = null;
 
     @property(Node) public areaShrimp: Node = null;
     @property(Node) public areaMarket: Node = null;
@@ -70,6 +72,13 @@ export class GameView extends Component {
         if (pIdStr !== null) {
             this.localPlayerId = parseInt(pIdStr);
         }
+
+        if (this.tributeCardsLabel) {
+            this.tributeCardsLabel.node.on(Node.EventType.TOUCH_END, this.onTributeCardsClicked, this);
+            // 提示它是可以点击的
+            this.tributeCardsLabel.color = new Color(100, 200, 255); 
+        }
+
         this.onStateChanged();
     }
 
@@ -280,8 +289,7 @@ export class GameView extends Component {
             if (this.tributeCardsLabel) {
                 const cards = me.tributeCards || [];
                 if (cards.length > 0) {
-                    const names = cards.map((c: any) => c.name).join(' | ');
-                    this.tributeCardsLabel.string = `📜 上供卡：${names}`;
+                    this.tributeCardsLabel.string = `📜 上供卡：${cards.length} 张 (点击查看)`;
                     this.tributeCardsLabel.node.active = true;
                 } else {
                     this.tributeCardsLabel.string = '📜 上供卡：无';
@@ -368,5 +376,20 @@ export class GameView extends Component {
         NetworkManager.instance.send('clientGameAction', 'nextPlayer', { payload: {} });
         const nextBtnComp = this.btnNextPlayer.getComponent(Button);
         if (nextBtnComp) nextBtnComp.interactable = false;
+    }
+
+    private onTributeCardsClicked() {
+        const stateStr = cc.sys.localStorage.getItem('currentGameState');
+        if (!stateStr) return;
+        const gameState = JSON.parse(stateStr);
+        const me = (gameState.players || []).find((p: any) => p.id == this.localPlayerId);
+        const cards = me?.tributeCards || [];
+        if (cards.length === 0) return;
+
+        if (this.cardListPopupPrefab) {
+            const node = instantiate(this.cardListPopupPrefab);
+            this.node.addChild(node);
+            node.getComponent(CardListPopup)?.init(cards);
+        }
     }
 }
