@@ -148,6 +148,13 @@ export class GameView extends Component {
     private onError(data: any) {
         console.warn("⚠️ 操作被服务器拒绝:", data.message);
         this.phaseLabel.string = `⚠️ ${data.message}`;
+        
+        // 1.5秒后恢复UI状态，避免按钮永久置灰（例如遇到频繁请求防抖错误时）
+        setTimeout(() => {
+            if (this.isValid) {
+                this.onStateChanged();
+            }
+        }, 1500);
     }
 
     private onAreaSettlementStart(data: any) {
@@ -266,10 +273,10 @@ export class GameView extends Component {
             this.myNameLabel.string = `👤 玩家：${me.name}`;
             this.coinsLabel.string = `💰 金币：${me.coins}`;
             this.liZhangLabel.string = `👷 里长：${me.liZhang}`;
-            this.lobstersLabel.string = `🦞 龙虾：${me.lobsters.length} 只`;            
+            this.lobstersLabel.string = `🦞 龙虾：${me.lobsters.length + (me.titleCards ? me.titleCards.length : 0)} 只`;
             if (this.seaweedLabel) this.seaweedLabel.string = `🌿 海草：${me.seaweed || 0}`;
             if (this.cagesLabel) this.cagesLabel.string = `🛒 虾笼：${me.cages || 0}`;
-            
+
             if (this.tributeCardsLabel) {
                 const cards = me.tributeCards || [];
                 if (cards.length > 0) {
@@ -341,7 +348,7 @@ export class GameView extends Component {
         const slots = areaData.slots || [];
         const myLocalLastArea = cc.sys.localStorage.getItem('myLastPlacedArea');
         const myLocalLastSlot = parseInt(cc.sys.localStorage.getItem('myLastPlacedSlot') || '-1');
-        const indicesToRender = customIndices || Array.from({length: slots.length}, (_, i) => i);
+        const indicesToRender = customIndices || Array.from({ length: slots.length }, (_, i) => i);
 
         for (let idx of indicesToRender) {
             if (idx >= slots.length) continue;
@@ -359,7 +366,6 @@ export class GameView extends Component {
 
     public onBtnNextPlayerClicked() {
         NetworkManager.instance.send('clientGameAction', 'nextPlayer', { payload: {} });
-        this.turnStartLiZhang = -1;
         const nextBtnComp = this.btnNextPlayer.getComponent(Button);
         if (nextBtnComp) nextBtnComp.interactable = false;
     }
