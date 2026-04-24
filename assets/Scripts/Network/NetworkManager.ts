@@ -11,6 +11,7 @@ export class NetworkManager {
 
     private ws: WebSocket | null = null;
     public eventTarget: EventTarget = new EventTarget();
+    private gameState: any = {}; // In-memory cache for game state
 
     public connect(url: string, onSuccess?: () => void, onError?: () => void) {
         if (this.ws) this.ws.close();
@@ -39,20 +40,18 @@ export class NetworkManager {
                 const actionType = innerData.actionType || innerData.action_type;
 
                 // ==========================================
-                // 🌟 全局状态拦截器 (增强版)
+                // 🌟 全局状态拦截器 (内存缓存版)
                 // ==========================================
-                const stateStr = cc.sys.localStorage.getItem('currentGameState');
-                let currentState = stateStr ? JSON.parse(stateStr) : {};
                 let stateModified = false;
 
                 // 拦截 1：战局更新
-                if (actionType === 'gameStateUpdate' || serverEvent === 'gameStateUpdate') {
+                if (serverEvent === 'gameStateUpdate' || actionType === 'gameStateUpdate') {
                     const newData = innerData.gameState || innerData;
-                    Object.assign(currentState, newData);
+                    Object.assign(this.gameState, newData);
                     stateModified = true;
                 }
-                // 拦截 2：玩家资源更新 (包含专门的更新包和结算时的附加包)
-                // 重点修复：同时拦截 playerResourceUpdate 和 AREA_WAITING_UI 里的 player 数据
+
+                // 拦截 2：玩家资源更新
                 const isResourceMsg = (serverEvent === 'playerResourceUpdate' || actionType === 'playerResourceUpdate');
                 const isWaitingUIMsg = (actionType === 'areaWaitingUI');
 
@@ -60,19 +59,18 @@ export class NetworkManager {
                     const playerData = innerData.player || innerData.resources || (isResourceMsg ? innerData : null);
                     const playerId = innerData.playerId;
 
-                    if (playerData && playerId !== undefined && currentState.players) {
-                        const targetPlayer = currentState.players.find((p: any) => p.id == playerId);
+                    if (playerData && playerId !== undefined && this.gameState.players) {
+                        const targetPlayer = this.gameState.players.find((p: any) => p.id == playerId);
                         if (targetPlayer) {
-                            // 将捕虾结果等资源直接合并进缓存
                             Object.assign(targetPlayer, playerData);
                             stateModified = true;
-                            console.log(`✅ 已同步玩家 ${playerId} 的最新资源数据`);
+                            console.log(`✅ 已同步玩家 ${playerId} 的内存缓存数据`);
                         }
                     }
                 }
 
                 if (stateModified) {
-                    cc.sys.localStorage.setItem('currentGameState', JSON.stringify(currentState));
+                    cc.sys.localStorage.setItem('currentGameState', JSON.stringify(this.gameState));
                 }
                 // ==========================================
 
@@ -120,5 +118,16 @@ export class NetworkManager {
             this.ws.close();
             this.ws = null;
         }
+        this.gameState = {}; // Clear cache on disconnect
+    }
+
+    public getGameState(): any {
+        if (Object.keys(this.gameState).length === 0) {
+            const stateStr = cc.sys.localStorage.getItem('currentGameState');
+            if (stateStr) {
+                this.gameState = JSON.parse(stateStr);
+            }
+        }
+        return this.gameState;
     }
 }

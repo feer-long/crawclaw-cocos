@@ -2,8 +2,7 @@ import { _decorator, Component, Label, Button, Node, instantiate, Color, Sprite 
 import { NetworkManager } from '../Network/NetworkManager';
 const { ccclass, property } = _decorator;
 
-const GRADE_NAMES: any = { 'normal': '普虾', 'grade3': '三品', 'grade2': '二品', 'grade1': '一品', 'royal': '👑虾王' };
-const GRADE_ORDER = ['normal', 'grade3', 'grade2', 'grade1', 'royal'];
+import { GRADE_NAMES, GRADE_ORDER } from '../Data/GameConstants';
 
 @ccclass('BreedingPopup')
 export class BreedingPopup extends Component {

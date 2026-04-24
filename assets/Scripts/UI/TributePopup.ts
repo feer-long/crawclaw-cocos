@@ -2,7 +2,7 @@ import { _decorator, Component, Label, Button, Node, instantiate, Color, Sprite 
 import { NetworkManager } from '../Network/NetworkManager';
 const { ccclass, property } = _decorator;
 
-const GRADE_NAMES: any = { 'normal': '普虾(0分)', 'grade3': '三品(1分)', 'grade2': '二品(2分)', 'grade1': '一品(3分)', 'royal': '👑虾王(4分)' };
+
 
 @ccclass('TributePopup')
 export class TributePopup extends Component {
@@ -122,10 +122,7 @@ export class TributePopup extends Component {
         });
     }
 
-    private getGradeValue(grade: string): number {
-        const gradeValues: any = { 'normal': 0, 'grade3': 1, 'grade2': 2, 'grade1': 3, 'royal': 4 };
-        return gradeValues[grade] || 0;
-    }
+
 
     private checkResources(cards: any[]): boolean {
         let reqCoins = 0, reqSeaweed = 0, reqCages = 0;

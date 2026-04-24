@@ -1,7 +1,7 @@
 import { _decorator, Component, Label, Button, Node, instantiate, Color, Sprite, UITransform, Layout } from 'cc';
 const { ccclass, property } = _decorator;
 
-const GRADE_NAMES: any = { 'normal': '普虾', 'grade3': '三品', 'grade2': '二品', 'grade1': '一品', 'royal': '👑虾王' };
+import { GRADE_NAMES } from '../Data/GameConstants';
 
 @ccclass('CardListPopup')
 export class CardListPopup extends Component {
@@ -10,8 +10,14 @@ export class CardListPopup extends Component {
     @property(Node) public itemTemplate: Node = null;
     @property(Button) public btnClose: Button = null;
 
-    public init(cards: any[]) {
-        if (this.titleLabel) this.titleLabel.string = `📜 我的上供卡 (${cards.length})`;
+    public init(cards: any[], playerName?: string) {
+        if (this.titleLabel) {
+            if (playerName) {
+                this.titleLabel.string = `👀 正在查看 [${playerName}] 的上供卡`;
+            } else {
+                this.titleLabel.string = `📜 我的上供卡 (${cards.length})`;
+            }
+        }
         
         if (this.content && this.itemTemplate) {
             this.itemTemplate.active = false;

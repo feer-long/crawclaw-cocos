@@ -2,7 +2,7 @@ import { _decorator, Component, Label, Button, Node, instantiate, Color, Sprite,
 import { NetworkManager } from '../Network/NetworkManager';
 const { ccclass, property } = _decorator;
 
-const GRADE_NAMES: any = { 'normal': '普通龙虾', 'grade3': '三品龙虾', 'grade2': '二品龙虾', 'grade1': '一品龙虾', 'royal': '👑皇家龙虾' };
+import { GRADE_NAMES, getGradeValue } from '../Data/GameConstants';
 
 @ccclass('LobsterSelectPopup')
 export class LobsterSelectPopup extends Component {
@@ -20,6 +20,7 @@ export class LobsterSelectPopup extends Component {
     private localPlayerId: number = -1;
     private isChallenger: boolean = false;
     private isDefender: boolean = false;
+    private isViewOnly: boolean = false;
 
     private myInventory: any[] = [];
     private selectedItemIndex: number = -1;
@@ -33,6 +34,31 @@ export class LobsterSelectPopup extends Component {
             const stateStr = cc.sys.localStorage.getItem('localPlayerId');
             this.localPlayerId = stateStr ? parseInt(stateStr) : -1;
 
+            // 【新增】处理纯查看模式
+            this.isViewOnly = (data.viewOnly === true);
+            if (this.isViewOnly) {
+                this.isChallenger = false;
+                this.isDefender = false;
+
+                if (this.titleLabel) this.titleLabel.string = '';
+                if (this.vsLabel) this.vsLabel.string = `👀 正在查看 [${data.playerName}] 的龙虾图鉴`;
+                if (this.hintLabel) this.hintLabel.string = `共拥有 ${data.lobsters.length + (data.titles ? data.titles.length : 0)} 只龙虾/称号`;
+                if (this.btnConfirm) {
+                    this.btnConfirm.node.active = true;
+                    const btnLabel = this.btnConfirm.getComponentInChildren(Label);
+                    if (btnLabel) btnLabel.string = "关闭";
+                }
+
+                this.myInventory = [];
+                if (data.lobsters) data.lobsters.forEach((l: any) => this.myInventory.push({ type: 'lobster', data: l }));
+                if (data.titles) data.titles.forEach((t: any) => this.myInventory.push({ type: 'title', data: t }));
+
+                if (this.lobsterScrollViewNode) this.lobsterScrollViewNode.active = true;
+                if (this.itemTemplate) this.itemTemplate.active = false;
+                this.renderLobsters(); // 直接渲染
+                return;
+            }
+
             this.currentBattle = data.battleQueue[0];
             if (!this.currentBattle) return;
 
@@ -42,8 +68,8 @@ export class LobsterSelectPopup extends Component {
             const gameStateStr = cc.sys.localStorage.getItem('currentGameState');
             const gameState = gameStateStr ? JSON.parse(gameStateStr) : null;
 
-            const pChallenger = gameState?.players.find((p:any) => p.id === this.currentBattle.challengerId);
-            const pDefender = gameState?.players.find((p:any) => p.id === this.currentBattle.defenderId);
+            const pChallenger = gameState?.players.find((p: any) => p.id === this.currentBattle.challengerId);
+            const pDefender = gameState?.players.find((p: any) => p.id === this.currentBattle.defenderId);
 
             if (pChallenger && pDefender && this.vsLabel) {
                 // ==========================================
@@ -68,20 +94,14 @@ export class LobsterSelectPopup extends Component {
     }
 
     private getGradeValue(grade: string): number {
-        if (!grade) return 0;
-        if (grade === 'normal') return 0;
-        if (grade === 'grade3') return 1;
-        if (grade === 'grade2') return 2;
-        if (grade === 'grade1') return 3;
-        if (grade === 'royal') return 4;
-        return 4;
+        return getGradeValue(grade);
     }
 
     private loadAndCheckArmies(gameState: any) {
         if (!gameState) return;
-        const me = gameState.players.find((p:any) => p.id === this.localPlayerId);
+        const me = gameState.players.find((p: any) => p.id === this.localPlayerId);
         const oppId = this.isChallenger ? this.currentBattle.defenderId : this.currentBattle.challengerId;
-        const opponent = gameState.players.find((p:any) => p.id === oppId);
+        const opponent = gameState.players.find((p: any) => p.id === oppId);
 
         if (!me) return;
 
@@ -97,10 +117,10 @@ export class LobsterSelectPopup extends Component {
         if (opponent) {
             const oppLobsters = opponent.lobsters || [];
             const oppTitles = opponent.titleCards || [];
-            oppLobsters.forEach((l:any) => {
+            oppLobsters.forEach((l: any) => {
                 if (this.getGradeValue(l.grade) >= 1 && l.used !== true) this.oppValidCount++;
             });
-            oppTitles.forEach((t:any) => {
+            oppTitles.forEach((t: any) => {
                 if (t.used !== true) this.oppValidCount++;
             });
         }
@@ -169,19 +189,24 @@ export class LobsterSelectPopup extends Component {
             }
 
             const isUsed = item.data.used === true;
-            const canFight = val >= 1 && !isUsed;
+            // 【修改】如果是查看模式，所有龙虾都不置灰；否则按战斗规则过滤
+            const canFight = this.isViewOnly ? true : (val >= 1 && !isUsed);
             if (canFight) this.myValidCount++;
 
             (node as any)._itemData = { index: i, canFight: canFight, isUsed: isUsed, val: val, baseName: baseName };
 
-            node.on(Button.EventType.CLICK, () => {
-                if (!canFight) return;
-                this.selectedItemIndex = i;
-                this.refreshUI();
-            }, this);
+            if (!this.isViewOnly) {
+                node.on(Button.EventType.CLICK, () => {
+                    if (!canFight) return;
+                    this.selectedItemIndex = i;
+                    this.refreshUI();
+                }, this);
+            }
 
             this.itemNodes.push(node);
         }
+
+        this.refreshUI();
     }
 
     private refreshUI() {
@@ -200,15 +225,24 @@ export class LobsterSelectPopup extends Component {
                 if (sprite) sprite.color = new Color(200, 200, 200, 150);
                 if (btn) btn.interactable = false;
 
-                if (itemData.isUsed) {
-                    finalString += '(已战)';
-                } else if (itemData.val < 1) {
-                    finalString += '(不够格)';
+                // 【修改】战斗模式下才显示 (不够格) 等字样
+                if (!this.isViewOnly) {
+                    if (itemData.isUsed) {
+                        finalString += '(已战)';
+                    } else if (itemData.val < 1) {
+                        finalString += '(不够格)';
+                    }
                 }
             } else {
-                if (btn) btn.interactable = true;
-                const isSelected = (idx === this.selectedItemIndex);
-                if (sprite) sprite.color = isSelected ? new Color(255, 100, 100) : new Color(220, 240, 255);
+                // 【修改】如果是纯查看模式，关掉可点击交互，不显示高亮
+                if (this.isViewOnly) {
+                    if (btn) btn.interactable = false;
+                    if (sprite) sprite.color = new Color(255, 255, 255);
+                } else {
+                    if (btn) btn.interactable = true;
+                    const isSelected = (idx === this.selectedItemIndex);
+                    if (sprite) sprite.color = isSelected ? new Color(255, 100, 100) : new Color(220, 240, 255);
+                }
             }
 
             allLabels.forEach(l => {
@@ -216,6 +250,8 @@ export class LobsterSelectPopup extends Component {
                 else l.string = "";
             });
         });
+
+        if (this.isViewOnly) return;
 
         if (!this.btnConfirm || !this.hintLabel) return;
         const btnLabel = this.btnConfirm.getComponentInChildren(Label);
@@ -242,6 +278,12 @@ export class LobsterSelectPopup extends Component {
 
     public onBtnConfirmClicked() {
         if (!this.btnConfirm) return;
+
+        if (this.isViewOnly) {
+            this.node.destroy();
+            return;
+        }
+
         this.btnConfirm.interactable = false;
 
         if (this.myValidCount === 0) {

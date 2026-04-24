@@ -49,6 +49,35 @@ export class MarketPopup extends Component {
         }
     }
 
+    protected onEnable() {
+        NetworkManager.instance.eventTarget.on('gameStateUpdate', this.onExternalUpdate, this);
+        NetworkManager.instance.eventTarget.on('playerResourceUpdate', this.onExternalUpdate, this);
+    }
+
+    protected onDisable() {
+        NetworkManager.instance.eventTarget.off('gameStateUpdate', this.onExternalUpdate, this);
+        NetworkManager.instance.eventTarget.off('playerResourceUpdate', this.onExternalUpdate, this);
+    }
+
+    private onExternalUpdate() {
+        if (!this.node.active || !this.rawData) return;
+        
+        // Use memory cache to refresh player and game state
+        const gameState = NetworkManager.instance.getGameState();
+        if (gameState && this.rawData.player) {
+            const me = gameState.players.find((p: any) => p.id === this.rawData.player.id);
+            if (me) {
+                this.rawData.player = me;
+                this.rawData.prices = gameState.areas?.seafood_market?.dynamicPrices || this.rawData.prices;
+                this.rawData.marketLobsterCount = gameState.areas?.seafood_market?.marketLobsterCount ?? this.rawData.marketLobsterCount;
+                this.rawData.hireSlots = gameState.areas?.seafood_market?.hireSlots || this.rawData.hireSlots;
+            }
+        }
+        
+        this.refreshMarketView();
+        this.refreshHireView();
+    }
+
     public onBtnTabMarketClicked() { this.showTab('market'); }
     public onBtnTabHireClicked() { this.showTab('hire'); }
 

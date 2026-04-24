@@ -10,6 +10,7 @@ import { BattlePopup } from './BattlePopup';
 import { LobsterSelectPopup } from './LobsterSelectPopup';
 import { ResultPopup } from './ResultPopup';
 import { CardListPopup } from './CardListPopup';
+import { PlayerStatusManager } from './PlayerStatusManager';
 const { ccclass, property } = _decorator;
 
 @ccclass('GameView')
@@ -17,13 +18,6 @@ export class GameView extends Component {
 
     @property(Label) public roundLabel: Label = null;
     @property(Label) public phaseLabel: Label = null;
-    @property(Label) public myNameLabel: Label = null;
-    @property(Label) public coinsLabel: Label = null;
-    @property(Label) public liZhangLabel: Label = null;
-    @property(Label) public lobstersLabel: Label = null;
-    @property(Label) public seaweedLabel: Label = null;
-    @property(Label) public cagesLabel: Label = null;
-    @property(Label) public tributeCardsLabel: Label = null;
 
     @property(Prefab) public slotPrefab: Prefab = null;
     @property(Prefab) public popupPrefab: Prefab = null;
@@ -44,6 +38,7 @@ export class GameView extends Component {
     @property(Node) public areaTributeNormal: Node = null;
     @property(Node) public areaDowntown: Node = null;
     @property(Node) public btnNextPlayer: Node = null;
+    @property(PlayerStatusManager) public playerStatusManager: PlayerStatusManager = null;
 
     private localPlayerId: number = -1;
     private currentTurnPlayerIndex: number = -1;
@@ -67,6 +62,7 @@ export class GameView extends Component {
         NetworkManager.instance.eventTarget.on('battleUpdate', this.onBattleEvent, this);
         NetworkManager.instance.eventTarget.on('battleEnded', this.onBattleEvent, this);
         NetworkManager.instance.eventTarget.on('gameEnded', this.onGameEnded, this);
+        NetworkManager.instance.eventTarget.on('ui_view_player_items', this.onViewPlayerItems, this);
 
         const pIdStr = cc.sys.localStorage.getItem('localPlayerId');
         if (pIdStr !== null) {
@@ -76,7 +72,7 @@ export class GameView extends Component {
         if (this.tributeCardsLabel) {
             this.tributeCardsLabel.node.on(Node.EventType.TOUCH_END, this.onTributeCardsClicked, this);
             // 提示它是可以点击的
-            this.tributeCardsLabel.color = new Color(100, 200, 255); 
+            this.tributeCardsLabel.color = new Color(100, 200, 255);
         }
 
         this.onStateChanged();
@@ -94,6 +90,34 @@ export class GameView extends Component {
         NetworkManager.instance.eventTarget.off('battleUpdate', this.onBattleEvent, this);
         NetworkManager.instance.eventTarget.off('battleEnded', this.onBattleEvent, this);
         NetworkManager.instance.eventTarget.off('gameEnded', this.onGameEnded, this);
+        NetworkManager.instance.eventTarget.off('ui_view_player_items', this.onViewPlayerItems, this);
+    }
+
+    private onViewPlayerItems(data: any) {
+        if (data.type === 'tribute') {
+            const items = data.items || [];
+            if (this.cardListPopupPrefab) {
+                const node = instantiate(this.cardListPopupPrefab);
+                this.node.addChild(node);
+                node.setSiblingIndex(this.node.children.length - 1);
+                node.getComponent(CardListPopup)?.init(items, data.playerName);
+            }
+        } else if (data.type === 'lobster') {
+            const lobsters = data.lobsters || [];
+            const titles = data.titles || [];
+            if (this.lobsterSelectPopupPrefab) {
+                const node = instantiate(this.lobsterSelectPopupPrefab);
+                this.node.addChild(node);
+                node.setSiblingIndex(this.node.children.length - 1);
+                // 传入 viewOnly 标志位
+                node.getComponent(LobsterSelectPopup)?.init({
+                    viewOnly: true,
+                    playerName: data.playerName,
+                    lobsters: lobsters,
+                    titles: titles
+                });
+            }
+        }
     }
 
     private onGameEnded(data: any) {
@@ -157,7 +181,7 @@ export class GameView extends Component {
     private onError(data: any) {
         console.warn("⚠️ 操作被服务器拒绝:", data.message);
         this.phaseLabel.string = `⚠️ ${data.message}`;
-        
+
         // 1.5秒后恢复UI状态，避免按钮永久置灰（例如遇到频繁请求防抖错误时）
         setTimeout(() => {
             if (this.isValid) {
@@ -273,29 +297,15 @@ export class GameView extends Component {
         this.roundLabel.string = `🏁 第 ${gameState.currentRound || 1} 回合`;
 
         const players = gameState.players || [];
+        if (this.playerStatusManager) {
+            this.playerStatusManager.refreshData(players, this.localPlayerId);
+        }
         const isMyTurn = (gameState.currentPlayerIndex == this.localPlayerId) && (gameState.phase === 'placement');
 
         const me = players.find((p: any) => p.id == this.localPlayerId);
         let myLiZhang = 0;
         if (me) {
             myLiZhang = me.liZhang;
-            this.myNameLabel.string = `👤 玩家：${me.name}`;
-            this.coinsLabel.string = `💰 金币：${me.coins}`;
-            this.liZhangLabel.string = `👷 里长：${me.liZhang}`;
-            this.lobstersLabel.string = `🦞 龙虾：${me.lobsters.length + (me.titleCards ? me.titleCards.length : 0)} 只`;
-            if (this.seaweedLabel) this.seaweedLabel.string = `🌿 海草：${me.seaweed || 0}`;
-            if (this.cagesLabel) this.cagesLabel.string = `🛒 虾笼：${me.cages || 0}`;
-
-            if (this.tributeCardsLabel) {
-                const cards = me.tributeCards || [];
-                if (cards.length > 0) {
-                    this.tributeCardsLabel.string = `📜 上供卡：${cards.length} 张 (点击查看)`;
-                    this.tributeCardsLabel.node.active = true;
-                } else {
-                    this.tributeCardsLabel.string = '📜 上供卡：无';
-                    this.tributeCardsLabel.node.active = true;
-                }
-            }
         }
 
         if (gameState.currentPlayerIndex !== this.currentTurnPlayerIndex || gameState.phase !== this.currentTurnPhase) {
