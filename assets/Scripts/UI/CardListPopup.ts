@@ -1,4 +1,4 @@
-import { _decorator, Component, Label, Button, Node, instantiate, Color, Sprite, UITransform, Layout } from 'cc';
+import { _decorator, Component, Label, Button, Node, instantiate, Layout } from 'cc';
 const { ccclass, property } = _decorator;
 
 import { GRADE_NAMES } from '../Data/GameConstants';
@@ -18,11 +18,12 @@ export class CardListPopup extends Component {
                 this.titleLabel.string = `📜 我的上供卡 (${cards.length})`;
             }
         }
-        
+
         if (this.content && this.itemTemplate) {
             this.itemTemplate.active = false;
             this.content.removeAllChildren();
 
+            // 1. 循环生成并赋值所有卡片
             cards.forEach(card => {
                 const node = instantiate(this.itemTemplate);
                 node.active = true;

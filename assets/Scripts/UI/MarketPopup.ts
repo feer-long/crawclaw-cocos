@@ -49,38 +49,6 @@ export class MarketPopup extends Component {
         }
     }
 
-    protected onEnable() {
-        NetworkManager.instance.eventTarget.on('gameStateUpdate', this.onExternalUpdate, this);
-        NetworkManager.instance.eventTarget.on('playerResourceUpdate', this.onExternalUpdate, this);
-    }
-
-    protected onDisable() {
-        NetworkManager.instance.eventTarget.off('gameStateUpdate', this.onExternalUpdate, this);
-        NetworkManager.instance.eventTarget.off('playerResourceUpdate', this.onExternalUpdate, this);
-    }
-
-    private onExternalUpdate() {
-        if (!this.node.active || !this.rawData) return;
-        
-        // Use memory cache to refresh player and game state
-        const gameState = NetworkManager.instance.getGameState();
-        if (gameState && this.rawData.player) {
-            const me = gameState.players.find((p: any) => p.id === this.rawData.player.id);
-            if (me) {
-                this.rawData.player = me;
-                this.rawData.prices = gameState.areas?.seafood_market?.dynamicPrices || this.rawData.prices;
-                this.rawData.marketLobsterCount = gameState.areas?.seafood_market?.marketLobsterCount ?? this.rawData.marketLobsterCount;
-                this.rawData.hireSlots = gameState.areas?.seafood_market?.hireSlots || this.rawData.hireSlots;
-            }
-        }
-        
-        this.refreshMarketView();
-        this.refreshHireView();
-    }
-
-    public onBtnTabMarketClicked() { this.showTab('market'); }
-    public onBtnTabHireClicked() { this.showTab('hire'); }
-
     private showTab(tabName: string) {
         const colorSelected = new Color(200, 200, 200);
         const colorNormal = new Color(255, 255, 255);
@@ -105,13 +73,13 @@ export class MarketPopup extends Component {
 
         this.actionCountLabel.string = `剩余操作次数：${this.actionCount}`;
         this.marketInfoLabel.string = `市场龙虾余量：${marketLobsterCount} / 8`;
-        
+
         // ========== 新增：检测并显示市场规则光环 ==========
         const hasMarketRule = player.permaBuffs && player.permaBuffs.includes('permaBuff_market_rule');
         if (hasMarketRule) {
             this.marketInfoLabel.string += '\n📌 市场规则：普通龙虾 ¥1/只 (不可卖出)';
         }
-        
+
         this.playerResourceLabel.string = `拥有：💰${player.coins} 🌿${player.seaweed} 🛒${player.cages} 🦞${player.lobsters.length}`;
 
         if (this.currentPriceLabel) {
@@ -170,8 +138,8 @@ export class MarketPopup extends Component {
         if (this.hireInfoLabel) {
             const availableExtra = 2 - hiredCount;
             let extraStr = "";
-            for(let i=0; i<availableExtra; i++) extraStr += "👷 ";
-            for(let i=0; i<hiredCount; i++) extraStr += "✔️(已雇) ";
+            for (let i = 0; i < availableExtra; i++) extraStr += "👷 ";
+            for (let i = 0; i < hiredCount; i++) extraStr += "✔️(已雇) ";
             this.hireInfoLabel.string = `我的待雇佣市场里长: ${extraStr}\n(占槽位每次需 6 金币)`;
             this.hireInfoLabel.color = canAfford ? new Color(0, 120, 0) : new Color(200, 50, 50);
         }

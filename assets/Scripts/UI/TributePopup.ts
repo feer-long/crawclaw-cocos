@@ -1,5 +1,6 @@
 import { _decorator, Component, Label, Button, Node, instantiate, Color, Sprite } from 'cc';
 import { NetworkManager } from '../Network/NetworkManager';
+import { GRADE_NAMES, getGradeValue } from '../Data/GameConstants';
 const { ccclass, property } = _decorator;
 
 
@@ -84,11 +85,11 @@ export class TributePopup extends Component {
         this.renderTaverns();
         this.renderInventory();
         this.refreshUI();
-        
+
         NetworkManager.instance.eventTarget.on('tributeChoiceRequired', this._onTributeChoiceRequired, this);
         NetworkManager.instance.eventTarget.on('error', this._onError, this);
     }
-    
+
     private _cleanupChoiceUI() {
         try {
             if (this.waitingChoiceNode) {
@@ -144,12 +145,12 @@ export class TributePopup extends Component {
         if (this.player.seaweed < reqSeaweed) return false;
         if (this.player.cages < reqCages) return false;
 
-        let myLobs = this.myInventory.map(item => item.type === 'title' ? 4 : this.getGradeValue(item.data.grade));
+        let myLobs = this.myInventory.map(item => item.type === 'title' ? 4 : getGradeValue(item.data.grade));
         myLobs.sort((a, b) => a - b);
 
         let reqLobs: number[] = [];
         for (const g in reqLobsters) {
-            for (let i = 0; i < reqLobsters[g]; i++) reqLobs.push(this.getGradeValue(g));
+            for (let i = 0; i < reqLobsters[g]; i++) reqLobs.push(getGradeValue(g));
         }
         reqLobs.sort((a, b) => b - a);
 
@@ -188,9 +189,24 @@ export class TributePopup extends Component {
             const tavern = this.taverns[tId];
             const cards = tavern.cards || [];
 
-            const occupants = tavern.occupants || [];
-            const nextScore = Math.max(0, 4 - occupants.length);
+            const gs = NetworkManager.instance.getGameState();
+            const tavernOrder = gs.tavernCompletionOrder || {};
+            const totalOccupants = (tavernOrder[tId] || tavernOrder[tId.toString()] || []).length;
+            const nextScore = Math.max(0, 3 - totalOccupants);
             const hasCompleted = this.player.tavernCompletions && this.player.tavernCompletions[tId] !== undefined;
+
+            let myScore = 0;
+            if (hasCompleted) {
+                const compVal = this.player.tavernCompletions[tId];
+                if (typeof compVal === 'number') {
+                    // 服务器传来的是入驻次序 (1, 2, 3, 4)，需转换为分数 (3, 2, 1, 0)
+                    myScore = Math.max(0, 4 - compVal);
+                } else {
+                    const orderList = (tavernOrder[tId] || tavernOrder[tId.toString()] || []);
+                    const rank = orderList.findIndex((pid: any) => Number(pid) === Number(this.player.id));
+                    myScore = rank !== -1 ? Math.max(0, 3 - rank) : 0;
+                }
+            }
 
             const headerNode = instantiate(this.tavernHeaderTemplate);
             headerNode.active = true;
@@ -209,7 +225,7 @@ export class TributePopup extends Component {
                 this.refreshUI();
             }, this);
 
-            (headerNode as any)._tavernData = { tId, nextScore, hasCompleted };
+            (headerNode as any)._tavernData = { tId, nextScore, hasCompleted, myScore };
             this.headerNodes.push(headerNode);
 
             if (cards.length === 0) {
@@ -323,7 +339,7 @@ export class TributePopup extends Component {
                 }
             }
 
-            const val = item.type === 'title' ? 4 : this.getGradeValue(item.data.grade);
+            const val = item.type === 'title' ? 4 : getGradeValue(item.data.grade);
             (node as any)._itemData = { id: item.id, val: val, originalIndex: item.originalIndex, isTitle: item.type === 'title' };
 
             node.on(Button.EventType.CLICK, () => {
@@ -395,7 +411,7 @@ export class TributePopup extends Component {
             const label = node.getComponent(Label);
             if (label) {
                 if (hData.hasCompleted) {
-                    label.string = `[${hData.tId + 1}号楼] (你已入驻) 席位分: ${hData.nextScore}分`;
+                    label.string = `[${hData.tId + 1}号楼] (你已入驻) 席位分: ${hData.myScore}分`;
                     label.color = new Color(160, 160, 160);
                 } else {
                     const isSelected = (this.selectedTavernId === hData.tId);
@@ -420,7 +436,7 @@ export class TributePopup extends Component {
                 if (card && card.requirements && card.requirements.lobsters) {
                     needsLobster = true;
                     for (const grade in card.requirements.lobsters) {
-                        const v = this.getGradeValue(grade);
+                        const v = getGradeValue(grade);
                         if (v < minFound) minFound = v;
                         this.reqLobsterCount += card.requirements.lobsters[grade];
                     }
@@ -579,40 +595,40 @@ export class TributePopup extends Component {
             payload: { actionType: 'skip', payload: {} }
         });
     }
-    
+
     private _onTributeChoiceRequired = (data: any) => {
         console.log('🎁 收到服务器 tributeChoiceRequired 数据:', data);
         const payload = data.data || data;
         console.log('🎁 parsed payload:', payload);
-        
+
         if (payload.playerId !== this.player.id) {
             console.log('❌ playerId 不匹配:', payload.playerId, 'vs', this.player.id);
             return;
         }
-        
+
         this.isWaitingChoice = true;
         this.pendingChoiceTaskId = payload.taskId;
         this.pendingChoiceType = payload.choiceType;
         this.choiceOptions = payload.options || [];
-        
+
         console.log('✅ 保存的选择信息:', {
             taskId: this.pendingChoiceTaskId,
             choiceType: this.pendingChoiceType,
             options: this.choiceOptions
         });
-        
+
         if (this.btnConfirm && this.btnConfirm.node) this.btnConfirm.node.active = false;
         if (this.btnSkip && this.btnSkip.node) this.btnSkip.node.active = false;
-        
+
         if (this.waitingChoiceNode) {
             this.waitingChoiceNode.active = true;
         }
-        
+
         if (this.pendingChoiceType === 'buy_advanced_lobster') {
             if (this.btnBuyGrade3 && this.btnBuyGrade3.node) this.btnBuyGrade3.node.active = false;
             if (this.btnBuyGrade2 && this.btnBuyGrade2.node) this.btnBuyGrade2.node.active = false;
             if (this.btnBuyGrade1 && this.btnBuyGrade1.node) this.btnBuyGrade1.node.active = false;
-            
+
             this.choiceOptions.forEach(opt => {
                 if (opt.grade === 'grade3' && this.btnBuyGrade3 && this.btnBuyGrade3.node) {
                     this.btnBuyGrade3.node.active = true;
@@ -624,61 +640,61 @@ export class TributePopup extends Component {
                     this.btnBuyGrade1.node.active = true;
                 }
             });
-            
+
             if (this.waitingChoiceLabel) {
                 this.waitingChoiceLabel.string = "🎁 上供触发效果：请选择购买高级龙虾的品级";
             }
         } else if (this.pendingChoiceType === 'discard_attack') {
             if (this.btnDiscardLobster && this.btnDiscardLobster.node) this.btnDiscardLobster.node.active = true;
             if (this.btnDiscardCage && this.btnDiscardCage.node) this.btnDiscardCage.node.active = true;
-            
+
             if (this.waitingChoiceLabel) {
                 this.waitingChoiceLabel.string = "🎁 上供触发效果：请选择其他玩家弃置的资源类型";
             }
         }
     }
-    
+
     public onBtnBuyGrade3Clicked() {
         this._submitChoice('grade3', 1);
     }
-    
+
     public onBtnBuyGrade2Clicked() {
         this._submitChoice('grade2', 2);
     }
-    
+
     public onBtnBuyGrade1Clicked() {
         this._submitChoice('grade1', 3);
     }
-    
+
     public onBtnDiscardLobsterClicked() {
         this._submitChoice('discard', 'lobster');
     }
-    
+
     public onBtnDiscardCageClicked() {
         this._submitChoice('discard', 'cage');
     }
-    
+
     private _submitChoice(action: string, gradeCost: number | string | null) {
         if (!this.pendingChoiceTaskId) {
             console.error('❌ 没有待处理的选择任务 ID');
             return;
         }
-        
+
         this._hideChoiceUI();
-        
+
         const choicePayload: any = { action };
-        
+
         if (action === 'discard') {
             choicePayload.targetType = gradeCost;
         } else {
             choicePayload.grade = action;
             choicePayload.cost = gradeCost as number;
         }
-        
+
         console.log('📤 提交上供选择:', { taskId: this.pendingChoiceTaskId, choice: choicePayload });
-        
+
         NetworkManager.instance.send('clientGameAction', 'areaAction', {
-            payload:{
+            payload: {
                 actionType: 'submitTributeChoice',
                 payload: {
                     taskId: this.pendingChoiceTaskId,
@@ -687,15 +703,15 @@ export class TributePopup extends Component {
             }
         });
     }
-    
+
     private _hideChoiceUI() {
         this.isWaitingChoice = false;
         this.pendingChoiceType = null;
         this.choiceOptions = [];
-        
+
         this._cleanupChoiceUI();
     }
-    
+
     private _onError = (data: any) => {
         if (data.code === 'DUPLICATE_REQUEST' && this.pendingChoiceTaskId) {
             setTimeout(() => {
@@ -710,7 +726,7 @@ export class TributePopup extends Component {
                     }
                     console.log('🔄 重试上供选择:', { taskId: this.pendingChoiceTaskId, choice });
                     NetworkManager.instance.send('clientGameAction', 'submitTributeChoice', {
-                        payload:{
+                        payload: {
                             actionType: 'submitTributeChoice',
                             payload: {
                                 taskId: this.pendingChoiceTaskId,
@@ -722,7 +738,7 @@ export class TributePopup extends Component {
             }, 600);
         }
     }
-    
+
     protected onDestroy() {
         this._cleanup();
         // 清空所有 pending 状态
@@ -732,7 +748,7 @@ export class TributePopup extends Component {
         this.choiceOptions = [];
         this._cleanupChoiceUI();
     }
-    
+
     private _cleanup() {
         NetworkManager.instance.eventTarget.off('tributeChoiceRequired', this._onTributeChoiceRequired, this);
         NetworkManager.instance.eventTarget.off('error', this._onError, this);

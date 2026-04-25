@@ -45,7 +45,10 @@ export class NetworkManager {
                 let stateModified = false;
 
                 // 拦截 1：战局更新
-                if (serverEvent === 'gameStateUpdate' || actionType === 'gameStateUpdate') {
+                if (innerData.gameState) {
+                    Object.assign(this.gameState, innerData.gameState);
+                    stateModified = true;
+                } else if (serverEvent === 'gameStateUpdate' || actionType === 'gameStateUpdate') {
                     const newData = innerData.gameState || innerData;
                     Object.assign(this.gameState, newData);
                     stateModified = true;

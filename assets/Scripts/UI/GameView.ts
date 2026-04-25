@@ -347,20 +347,21 @@ export class GameView extends Component {
 
         if (gameState.areas) {
             const effectiveLiZhang = hasPlacedThisTurn ? 0 : myLiZhang;
-            this.renderArea(gameState.areas.shrimp_catching, this.areaShrimp, 'shrimp_catching', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn);
-            this.renderArea(gameState.areas.seafood_market, this.areaMarket, 'seafood_market', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn);
-            this.renderArea(gameState.areas.breeding, this.areaBreeding, 'breeding', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn);
+            const currentRound = gameState.currentRound || 1;
+            this.renderArea(gameState.areas.shrimp_catching, this.areaShrimp, 'shrimp_catching', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, currentRound);
+            this.renderArea(gameState.areas.seafood_market, this.areaMarket, 'seafood_market', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, currentRound);
+            this.renderArea(gameState.areas.breeding, this.areaBreeding, 'breeding', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, currentRound);
 
             const tributeData = gameState.areas.tribute;
             if (tributeData) {
-                this.renderArea(tributeData, this.areaTributeNormal, 'tribute', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, [0, 1, 2]);
-                this.renderArea(tributeData, this.areaTributeChallenge, 'tribute', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, [3, 4, 5, 6, 7]);
+                this.renderArea(tributeData, this.areaTributeNormal, 'tribute', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, currentRound, [0, 1, 2]);
+                this.renderArea(tributeData, this.areaTributeChallenge, 'tribute', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, currentRound, [3, 4, 5, 6, 7]);
             }
-            this.renderArea(gameState.areas.marketplace, this.areaDowntown, 'marketplace', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn);
+            this.renderArea(gameState.areas.marketplace, this.areaDowntown, 'marketplace', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, currentRound);
         }
     }
 
-    private renderArea(areaData: any, containerNode: Node, areaId: string, players: any[], isMyTurn: boolean, effectiveLiZhang: number, lastPlacement: any, hasPlacedThisTurn: boolean, customIndices?: number[]) {
+    private renderArea(areaData: any, containerNode: Node, areaId: string, players: any[], isMyTurn: boolean, effectiveLiZhang: number, lastPlacement: any, hasPlacedThisTurn: boolean, currentRound: number, customIndices?: number[]) {
         if (!areaData || !containerNode) return;
         containerNode.removeAllChildren();
         const slots = areaData.slots || [];
@@ -376,9 +377,25 @@ export class GameView extends Component {
             const isLastPlaced = (lastPlacement && Number(lastPlacement.playerId) === Number(this.localPlayerId) && lastPlacement.areaName === areaId && lastPlacement.slotIndex === idx) ||
                 (occupantId == this.localPlayerId && hasPlacedThisTurn && myLocalLastArea === areaId && myLocalLastSlot === idx);
             const canCancel = isMyTurn && isLastPlaced;
-            const canPlace = isMyTurn && effectiveLiZhang > 0 && occupantId === null;
+            let canPlace = isMyTurn && effectiveLiZhang > 0 && occupantId === null;
+            let failReason = "";
+
+            // 1. 回合限制检查 (独立于玩家是否有里长，确保始终置灰)
+            if (areaId === 'tribute' && idx === 2 && currentRound < 4) {
+                failReason = "上供区此席位在第4回合才开放";
+            } else if (areaId === 'marketplace') {
+                if (idx === 0 && currentRound < 2) failReason = "闹市区1号格在第2回合才开放";
+                else if (idx === 1 && currentRound < 3) failReason = "闹市区2号格在第3回合才开放";
+                else if (idx === 2 && currentRound < 4) failReason = "闹市区3号格在第4回合才开放";
+            }
+
+            // 2. 如果回合未到，强制不能点击
+            if (failReason) {
+                canPlace = false;
+            }
+
             const slotView = slotNode.getComponent(ActionSlotView);
-            if (slotView) slotView.init(areaId, idx, occupantId, players, canPlace, canCancel);
+            if (slotView) slotView.init(areaId, idx, occupantId, players, canPlace, canCancel, failReason);
         }
     }
 
