@@ -235,8 +235,10 @@ export class TributePopup extends Component {
 
                 const nameLabel = node.getChildByName('NameLabel')?.getComponent(Label);
                 const reqLabel = node.getChildByName('ReqLabel')?.getComponent(Label);
+                const effectLabel = node.getChildByName('EffectLabel')?.getComponent(Label);
                 if (nameLabel) nameLabel.string = "【暂无卡牌】";
                 if (reqLabel) reqLabel.string = "";
+                if (effectLabel) effectLabel.string = "";
 
                 const btn = node.getComponent(Button);
                 if (btn) btn.interactable = false;
@@ -254,6 +256,7 @@ export class TributePopup extends Component {
 
                 const nameLabel = node.getChildByName('NameLabel')?.getComponent(Label);
                 const reqLabel = node.getChildByName('ReqLabel')?.getComponent(Label);
+                const effectLabel = node.getChildByName('EffectLabel')?.getComponent(Label);
 
                 let rewardStr = "";
                 if (card.reward) {
@@ -273,6 +276,7 @@ export class TributePopup extends Component {
                     });
                 }
                 if (reqLabel) reqLabel.string = reqStr;
+                if (effectLabel) effectLabel.string = card.effectDesc ? `效果: ${card.effectDesc}` : "";
 
                 node.on(Button.EventType.CLICK, () => {
                     if (hasCompleted) return;

@@ -31,6 +31,7 @@ export class CardListPopup extends Component {
 
                 const nameLabel = node.getChildByName('NameLabel')?.getComponent(Label) || node.getComponentInChildren(Label);
                 const reqLabel = node.getChildByName('ReqLabel')?.getComponent(Label);
+                const effectLabel = node.getChildByName('EffectLabel')?.getComponent(Label);
 
                 if (nameLabel) {
                     let rewardStr = "";
@@ -55,6 +56,7 @@ export class CardListPopup extends Component {
                     }
                     reqLabel.string = reqStr;
                 }
+                if (effectLabel) effectLabel.string = card.effectDesc ? `效果: ${card.effectDesc}` : "";
             });
         }
     }
