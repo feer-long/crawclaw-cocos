@@ -10,8 +10,8 @@ export class PlayerStatusManager extends Component {
     @property(Label) toggleBtnLabel: Label = null;
 
     private _isExpanded: boolean = false;
-    private _hiddenY: number = -785;
-    private _showY: number = -540;
+    private _hiddenY: number = -795;
+    private _showY: number = -520;
 
     start() {
         // 初始位置设置

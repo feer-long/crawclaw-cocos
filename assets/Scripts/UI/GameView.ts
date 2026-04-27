@@ -11,6 +11,7 @@ import { LobsterSelectPopup } from './LobsterSelectPopup';
 import { ResultPopup } from './ResultPopup';
 import { CardListPopup } from './CardListPopup';
 import { PlayerStatusManager } from './PlayerStatusManager';
+import { DeWangTrackView } from './DeWangTrackView';
 const { ccclass, property } = _decorator;
 
 @ccclass('GameView')
@@ -39,6 +40,7 @@ export class GameView extends Component {
     @property(Node) public areaDowntown: Node = null;
     @property(Node) public btnNextPlayer: Node = null;
     @property(PlayerStatusManager) public playerStatusManager: PlayerStatusManager = null;
+    @property(DeWangTrackView) public deWangTrackView: DeWangTrackView = null;
 
     private localPlayerId: number = -1;
     private currentTurnPlayerIndex: number = -1;
@@ -62,17 +64,12 @@ export class GameView extends Component {
         NetworkManager.instance.eventTarget.on('battleUpdate', this.onBattleEvent, this);
         NetworkManager.instance.eventTarget.on('battleEnded', this.onBattleEvent, this);
         NetworkManager.instance.eventTarget.on('gameEnded', this.onGameEnded, this);
+        NetworkManager.instance.eventTarget.on('endgameScoreChoiceRequired', this.onEndgameScoreChoiceRequired, this);
         NetworkManager.instance.eventTarget.on('ui_view_player_items', this.onViewPlayerItems, this);
 
         const pIdStr = cc.sys.localStorage.getItem('localPlayerId');
         if (pIdStr !== null) {
             this.localPlayerId = parseInt(pIdStr);
-        }
-
-        if (this.tributeCardsLabel) {
-            this.tributeCardsLabel.node.on(Node.EventType.TOUCH_END, this.onTributeCardsClicked, this);
-            // 提示它是可以点击的
-            this.tributeCardsLabel.color = new Color(100, 200, 255);
         }
 
         this.onStateChanged();
@@ -90,6 +87,7 @@ export class GameView extends Component {
         NetworkManager.instance.eventTarget.off('battleUpdate', this.onBattleEvent, this);
         NetworkManager.instance.eventTarget.off('battleEnded', this.onBattleEvent, this);
         NetworkManager.instance.eventTarget.off('gameEnded', this.onGameEnded, this);
+        NetworkManager.instance.eventTarget.off('endgameScoreChoiceRequired', this.onEndgameScoreChoiceRequired, this);
         NetworkManager.instance.eventTarget.off('ui_view_player_items', this.onViewPlayerItems, this);
     }
 
@@ -117,6 +115,23 @@ export class GameView extends Component {
                     titles: titles
                 });
             }
+        }
+    }
+
+    private onEndgameScoreChoiceRequired(data: any) {
+        const isForMe = (data.playerId == this.localPlayerId);
+        if (isForMe) {
+            if (this.currentPopupNode && this.currentPopupNode.isValid) {
+                this.currentPopupNode.destroy();
+            }
+            if (this.popupPrefab) {
+                this.currentPopupNode = instantiate(this.popupPrefab);
+                this.node.addChild(this.currentPopupNode);
+                const comp = this.currentPopupNode.getComponent('SettlementPopup');
+                if (comp) (comp as any).initEndgameChoice(data);
+            }
+        } else {
+            this.phaseLabel.string = `🏁 终局阶段：等待玩家 ${data.playerName} 进行得分选择...`;
         }
     }
 
@@ -283,8 +298,26 @@ export class GameView extends Component {
             // 【终极拦截器】：兼容 waitingEndgameChoice
             // 第 5 回合最后，只要状态变成了这两个之一，强制切断业务逻辑并拉起结算排行榜！
             // ==========================================
-            if (gameState.status === 'finished' || gameState.status === 'waitingEndgameChoice') {
+            if (gameState.status === 'finished') {
                 this.onGameEnded({ gameState: gameState });
+                return;
+            }
+
+            if (gameState.status === 'waitingEndgameChoice') {
+                const waitingList = gameState.waitingForEndgameChoice || [];
+                const currentIndex = gameState.endgameChoiceIndex || 0;
+                const currentPlayer = waitingList[currentIndex];
+
+                if (currentPlayer && currentPlayer.playerId != this.localPlayerId) {
+                    this.phaseLabel.string = `🏁 终局阶段：等待玩家 ${currentPlayer.playerName} 进行得分选择...`;
+                    // 如果已经打开了结算框但不是自己的轮次，关掉它
+                    if (this.currentPopupNode && this.currentPopupNode.name === 'SettlementPopup') {
+                        this.currentPopupNode.destroy();
+                        this.currentPopupNode = null;
+                    }
+                    // 显示排行榜（此时总分可能还没最终定格，但可以看）
+                    this.onGameEnded({ gameState: gameState });
+                }
                 return;
             }
 
@@ -343,6 +376,11 @@ export class GameView extends Component {
         } else if (gameState.phase === 'placement') {
             this.phaseLabel.string = `(⏳ 等待 玩家 ${gameState.currentPlayerIndex} 行动...)`;
             if (nextBtnComp) nextBtnComp.interactable = false;
+        }
+
+        // ===== 新增：更新德望轨道 =====
+        if (this.deWangTrackView) {
+            this.deWangTrackView.updateTracks(players);
         }
 
         if (gameState.areas) {

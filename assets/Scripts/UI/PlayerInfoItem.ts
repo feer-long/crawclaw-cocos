@@ -1,5 +1,6 @@
 import { _decorator, Component, Label, Node, Color, Button } from 'cc';
 import { NetworkManager } from '../Network/NetworkManager';
+import { calculateEstimatedScore } from '../Data/GameConstants';
 const { ccclass, property } = _decorator;
 
 @ccclass('PlayerInfoItem')
@@ -7,6 +8,7 @@ export class PlayerInfoItem extends Component {
     @property(Label) playerName: Label = null;
     @property(Label) attrLabel: Label = null;
     @property(Label) resourceLabel: Label = null;
+    @property(Label) scoreLabel: Label = null;
 
     @property(Label) tributeCount: Label = null;
     @property(Label) lobsterCount: Label = null;
@@ -22,13 +24,20 @@ export class PlayerInfoItem extends Component {
 
         // 对应服务端的数据字段
         this.attrLabel.string = `德:${data.de} | 望:${data.wang} | 里长:${data.liZhang}`;
-        this.resourceLabel.string = `💰${data.coins} 🌿${data.seaweed} 🛒${data.cages}`;
+        this.resourceLabel.string = `💰:${data.coins} | 🌿:${data.seaweed} | 🛒:${data.cages}`;
         const tributeCards = data.tributeCards || [];
         const lobsters = data.lobsters || [];
         const titles = data.titleCards || [];
 
         this.tributeCount.string = `卡:${tributeCards.length}`;
         this.lobsterCount.string = `虾:${lobsters.length + titles.length}`;
+
+        // 计算预估得分
+        const gameState = NetworkManager.instance.getGameState();
+        const scoreInfo = calculateEstimatedScore(data, gameState);
+        if (this.scoreLabel) {
+            this.scoreLabel.string = `总分预估:${scoreInfo.total}分`;
+        }
 
         // 绑定点击事件：通过全局事件总线通知 GameView 弹出详情
         this.tributeBtnNode.off(Button.EventType.CLICK);

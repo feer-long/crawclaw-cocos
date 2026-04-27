@@ -1,4 +1,5 @@
 import { _decorator, Component, Label, Node, instantiate, Color, director, Button, Layout } from 'cc';
+import { calculateEstimatedScore } from '../Data/GameConstants';
 const { ccclass, property } = _decorator;
 
 @ccclass('ResultPopup')
@@ -13,6 +14,23 @@ export class ResultPopup extends Component {
         if (!gameState) return;
 
         const players = gameState.players || [];
+        
+        if (gameState.status === 'waitingEndgameChoice') {
+            const waitingList = gameState.waitingForEndgameChoice || [];
+            const currentIndex = gameState.endgameChoiceIndex || 0;
+            const currentPlayer = waitingList[currentIndex];
+            if (this.btnReturn) {
+                const btnLabel = this.btnReturn.getComponentInChildren(Label);
+                if (btnLabel) btnLabel.string = `⏳ 等待 ${currentPlayer?.playerName || '他人'} 选择中...`;
+                this.btnReturn.interactable = false;
+            }
+        } else {
+            if (this.btnReturn) {
+                const btnLabel = this.btnReturn.getComponentInChildren(Label);
+                if (btnLabel) btnLabel.string = "返回大厅";
+                this.btnReturn.interactable = true;
+            }
+        }
 
         // 1. 计算每个玩家的详细得分
         const results = players.map((p: any) => {
@@ -68,13 +86,16 @@ export class ResultPopup extends Component {
             if (scoreLabel) scoreLabel.string = `${res.total} 分`;
 
             // 成功填充你要求的总览格式！
-            if (detailLabel) detailLabel.string = `德望: ${res.core}分 | 席位: ${res.tavern}分 | 资源: ${res.res}分`;
+            const bonusStr = res.bonusPoints > 0 ? ` | 额外: ${res.bonusPoints}分` : "";
+            if (detailLabel) detailLabel.string = `德望: ${res.core}分 | 席位: ${res.tavern}分 | 资源: ${res.res}分${bonusStr}`;
 
             // ==========================================
             // 详细算式渲染
             // ==========================================
-            if (detailCore) detailCore.string = `核心乘积分 =（德${res.deVal} * 望${res.wangVal} = ${res.core}分）`;
-            if (detailTavern) detailTavern.string = `上供席位分 =（${res.tavernList.join(' + ')} = ${res.tavern}分）`;
+            if (detailCore) {
+                detailCore.string = `核心乘积分 =（映射值德${res.deValue} * 望${res.wangValue}）+ 德奖${res.deBonus} + 望奖${res.wangBonus} = ${res.core}分`;
+            }
+            if (detailTavern) detailTavern.string = `上供席位分 =（${res.tavernList.length > 0 ? res.tavernList.join(' + ') : '0'} = ${res.tavern}分）`;
             if (detailRes) detailRes.string = `资源转换分 =（金币折算${res.coinsScore} + 海草折算${res.seaweedScore} + 虾笼折算${res.cagesScore} + 龙虾折算${res.lobstersScore} = ${res.res}分）`;
 
             // ==========================================
@@ -96,81 +117,7 @@ export class ResultPopup extends Component {
     }
 
     private calculateFinalScore(player: any, gameState: any) {
-        // ==========================================
-        // 1. 核心乘积分
-        // ==========================================
-        const de = Math.max(player.de || 0, 0);
-        const wang = Math.max(player.wang || 0, 0);
-        const coreScore = de * wang;
-
-        // ==========================================
-        // 2. 上供席位分 (地毯式搜索真实酒楼数据)
-        // ==========================================
-        const tavernScores: number[] = [];
-        let tavernTotal = 0;
-
-        const tavernCompletionOrder = gameState.tavernCompletionOrder || {};
-        const scoreMap = [3, 2, 1, 0];
-
-        for (const key in tavernCompletionOrder) {
-            const list = tavernCompletionOrder[key];
-            if (Array.isArray(list)) {
-                const rank = list.findIndex((pid: any) => Number(pid) === Number(player.id));
-                if (rank !== -1) {
-                    const score = scoreMap[rank] || 0;
-                    tavernScores.push(score);
-                    tavernTotal += score;
-                }
-            }
-        }
-
-        // ==========================================
-        // 3. 资源转换分
-        // ==========================================
-        const coinsScore = Math.floor((player.coins || 0) / 2);
-        const seaweedScore = Math.floor((player.seaweed || 0) / 3);
-        const cagesScore = (player.cages || 0) * 2;
-
-        let lobstersScore = 0;
-        (player.lobsters || []).forEach((l: any) => {
-            const isRoyalTitle = (l.grade === 'royal' && (l.title || l.name)) || l.name === '红头紫' || l.name === '长鳌虾';
-
-            if (isRoyalTitle) {
-                lobstersScore += 8;
-            } else if (l.grade === 'royal') {
-                lobstersScore += 6;
-            } else if (l.grade === 'grade1') {
-                lobstersScore += 4;
-            } else if (l.grade === 'grade2') {
-                lobstersScore += 3;
-            } else if (l.grade === 'grade3') {
-                lobstersScore += 2;
-            } else {
-                lobstersScore += 1;
-            }
-        });
-
-        (player.titleCards || []).forEach(() => {
-            lobstersScore += 8;
-        });
-
-        const resScore = coinsScore + seaweedScore + cagesScore + lobstersScore;
-
-        const total = coreScore + tavernTotal + resScore;
-
-        return {
-            deVal: de,
-            wangVal: wang,
-            core: coreScore,
-            tavernList: tavernScores,
-            tavern: tavernTotal,
-            coinsScore: coinsScore,
-            seaweedScore: seaweedScore,
-            cagesScore: cagesScore,
-            lobstersScore: lobstersScore,
-            res: resScore,
-            total: total
-        };
+        return calculateEstimatedScore(player, gameState);
     }
 
     public onBtnReturnClicked() {

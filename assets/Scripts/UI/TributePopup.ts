@@ -29,11 +29,8 @@ export class TributePopup extends Component {
     @property(Button) public btnConfirm: Button = null;
     @property(Button) public btnSkip: Button = null;
 
-    @property(Button) public btnBuyGrade3: Button = null;
-    @property(Button) public btnBuyGrade2: Button = null;
-    @property(Button) public btnBuyGrade1: Button = null;
-    @property(Button) public btnDiscardLobster: Button = null;
-    @property(Button) public btnDiscardCage: Button = null;
+    @property(Node) public choiceContainer: Node = null;
+    @property(Node) public choiceBtnTemplate: Node = null;
     @property(Node) public waitingChoiceNode: Node = null;
     @property(Label) public waitingChoiceLabel: Label = null;
 
@@ -98,13 +95,14 @@ export class TributePopup extends Component {
             if (this.waitingChoiceLabel) {
                 this.waitingChoiceLabel.string = "";
             }
-            if (this.btnBuyGrade3 && this.btnBuyGrade3.node) this.btnBuyGrade3.node.active = false;
-            if (this.btnBuyGrade2 && this.btnBuyGrade2.node) this.btnBuyGrade2.node.active = false;
-            if (this.btnBuyGrade1 && this.btnBuyGrade1.node) this.btnBuyGrade1.node.active = false;
-            if (this.btnDiscardLobster && this.btnDiscardLobster.node) this.btnDiscardLobster.node.active = false;
-            if (this.btnDiscardCage && this.btnDiscardCage.node) this.btnDiscardCage.node.active = false;
-            if (this.btnConfirm && this.btnConfirm.node) this.btnConfirm.node.active = true;
-            if (this.btnSkip && this.btnSkip.node) this.btnSkip.node.active = true;
+            if (this.btnConfirm && this.btnConfirm.node) {
+                this.btnConfirm.node.active = true;
+                this.btnConfirm.interactable = true; // 恢复确认按钮可点击
+            }
+            if (this.btnSkip && this.btnSkip.node) {
+                this.btnSkip.node.active = true;
+                this.btnSkip.interactable = true; // 恢复跳过按钮可点击
+            }
         } catch (e) {
             console.error('清理选择 UI 时出错:', e);
         }
@@ -123,7 +121,29 @@ export class TributePopup extends Component {
         });
     }
 
+    /**
+         * 动态生成一个选项按钮
+         * @param btnText 按钮显示的文字
+         * @param action 提交的动作类型
+         * @param costOrTarget 附带的参数（消耗或目标）
+         */
+    private createDynamicChoiceBtn(btnText: string, action: string, costOrTarget: any) {
+        if (!this.choiceBtnTemplate || !this.choiceContainer) return;
 
+        const btnNode = instantiate(this.choiceBtnTemplate);
+        btnNode.active = true;
+
+        // 替换按钮上的文字
+        const label = btnNode.getComponentInChildren(Label);
+        if (label) label.string = btnText;
+
+        // 绑定点击事件，直接将参数透传给现有的 _submitChoice
+        btnNode.on(Button.EventType.CLICK, () => {
+            this._submitChoice(action, costOrTarget);
+        }, this);
+
+        this.choiceContainer.addChild(btnNode);
+    }
 
     private checkResources(cards: any[]): boolean {
         let reqCoins = 0, reqSeaweed = 0, reqCages = 0;
@@ -628,34 +648,28 @@ export class TributePopup extends Component {
             this.waitingChoiceNode.active = true;
         }
 
-        if (this.pendingChoiceType === 'buy_advanced_lobster') {
-            if (this.btnBuyGrade3 && this.btnBuyGrade3.node) this.btnBuyGrade3.node.active = false;
-            if (this.btnBuyGrade2 && this.btnBuyGrade2.node) this.btnBuyGrade2.node.active = false;
-            if (this.btnBuyGrade1 && this.btnBuyGrade1.node) this.btnBuyGrade1.node.active = false;
-
-            this.choiceOptions.forEach(opt => {
-                if (opt.grade === 'grade3' && this.btnBuyGrade3 && this.btnBuyGrade3.node) {
-                    this.btnBuyGrade3.node.active = true;
-                }
-                if (opt.grade === 'grade2' && this.btnBuyGrade2 && this.btnBuyGrade2.node) {
-                    this.btnBuyGrade2.node.active = true;
-                }
-                if (opt.grade === 'grade1' && this.btnBuyGrade1 && this.btnBuyGrade1.node) {
-                    this.btnBuyGrade1.node.active = true;
-                }
-            });
-
-            if (this.waitingChoiceLabel) {
-                this.waitingChoiceLabel.string = "🎁 上供触发效果：请选择购买高级龙虾的品级";
-            }
-        } else if (this.pendingChoiceType === 'discard_attack') {
-            if (this.btnDiscardLobster && this.btnDiscardLobster.node) this.btnDiscardLobster.node.active = true;
-            if (this.btnDiscardCage && this.btnDiscardCage.node) this.btnDiscardCage.node.active = true;
-
-            if (this.waitingChoiceLabel) {
-                this.waitingChoiceLabel.string = "🎁 上供触发效果：请选择其他玩家弃置的资源类型";
-            }
+        // 先清空上一次生成的按钮，并显示容器
+        if (this.choiceContainer) {
+            this.choiceContainer.removeAllChildren();
+            this.choiceContainer.active = true;
         }
+
+        if (this.pendingChoiceType === 'buy_advanced_lobster') {
+            this.waitingChoiceLabel.string = "🎁 上供触发效果：请选择购买高级龙虾的品级";
+            // 根据服务器发来的 options 动态生成对应按钮
+            this.choiceOptions.forEach(opt => {
+                const cost = opt.grade === 'grade1' ? 3 : (opt.grade === 'grade2' ? 2 : 1);
+                // 自动生成按钮
+                this.createDynamicChoiceBtn(`花费${cost}金购买 ${GRADE_NAMES[opt.grade]}`, opt.grade, cost);
+            });
+        }
+        else if (this.pendingChoiceType === 'discard_attack') {
+            this.waitingChoiceLabel.string = "🎁 上供触发效果：请选择其他玩家弃置的资源类型";
+            // 自动生成按钮
+            this.createDynamicChoiceBtn("弃置龙虾 🦞", "discard", "lobster");
+            this.createDynamicChoiceBtn("弃置虾笼 🛒", "discard", "cage");
+        }
+        // 💡 以后新增任何卡牌特效，只需加个 else if，调用 createDynamicChoiceBtn 即可！完全不用动编辑器面板！
     }
 
     public onBtnBuyGrade3Clicked() {
@@ -684,7 +698,11 @@ export class TributePopup extends Component {
             return;
         }
 
-        this._hideChoiceUI();
+        if (this.choiceContainer) this.choiceContainer.active = false;
+
+        if (this.waitingChoiceLabel) {
+            this.waitingChoiceLabel.string = "⏳ 选项提交中，等待结算...";
+        }
 
         const choicePayload: any = { action };
 
