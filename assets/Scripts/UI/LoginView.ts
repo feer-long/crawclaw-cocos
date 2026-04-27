@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, EditBox, director } from 'cc';
+import { _decorator, Component, Node, EditBox, director, profiler } from 'cc';
 import { NetworkManager } from '../Network/NetworkManager'; // 引入我们刚写的全局单例
 const { ccclass, property } = _decorator;
 
@@ -13,6 +13,7 @@ export class LoginView extends Component {
     private serverUrl: string = "ws://localhost:3100/ws/lobby";
 
     start() {
+        profiler.hideStats();
         console.log("登录场景加载完毕！等待玩家输入名字。");
     }
 

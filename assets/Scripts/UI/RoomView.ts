@@ -1,4 +1,4 @@
-import { _decorator, Component, Label, Node, director, Color } from 'cc';
+import { _decorator, Component, Label, Node, director, Color, profiler } from 'cc';
 import { NetworkManager } from '../Network/NetworkManager';
 const { ccclass, property } = _decorator;
 
@@ -26,6 +26,7 @@ export class RoomView extends Component {
     private isReady: boolean = false;
 
     onLoad() {
+        profiler.hideStats();
         // 监听 Python 服务器的事件
         NetworkManager.instance.eventTarget.on('roomStateUpdate', this.onRoomStateUpdate, this);
         NetworkManager.instance.eventTarget.on('gameStarted', this.onGameStarted, this);

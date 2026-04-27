@@ -1,4 +1,4 @@
-import { _decorator, Component, EditBox, Label, director } from 'cc';
+import { _decorator, Component, EditBox, Label, director, profiler } from 'cc';
 import { NetworkManager } from '../Network/NetworkManager';
 const { ccclass, property } = _decorator;
 
@@ -12,6 +12,7 @@ export class LobbyView extends Component {
     public statusLabel: Label = null;
 
     onLoad() {
+        profiler.hideStats();
         // 【修改点】：全部对齐 events.py 的 ServerRoomActionTypes
         NetworkManager.instance.eventTarget.on('roomCreated', this.onRoomCreated, this);
         NetworkManager.instance.eventTarget.on('playerJoined', this.onRoomJoined, this);
