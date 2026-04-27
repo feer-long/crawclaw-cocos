@@ -49,6 +49,9 @@ export class MarketPopup extends Component {
         }
     }
 
+    public onBtnTabMarketClicked() { this.showTab('market'); }
+    public onBtnTabHireClicked() { this.showTab('hire'); }
+
     private showTab(tabName: string) {
         const colorSelected = new Color(200, 200, 200);
         const colorNormal = new Color(255, 255, 255);

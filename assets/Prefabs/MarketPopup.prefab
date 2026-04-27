@@ -5150,7 +5150,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 0,
-      "y": -330,
+      "y": -340,
       "z": 0
     },
     "_lrot": {
@@ -8734,7 +8734,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 0,
-      "y": 0,
+      "y": -17.569,
       "z": 0
     },
     "_lrot": {
@@ -8825,7 +8825,7 @@
     "_contentSize": {
       "__type__": "cc.Size",
       "width": 550.01953125,
-      "height": 50.4
+      "height": 80
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -8860,14 +8860,14 @@
       "b": 47,
       "a": 255
     },
-    "_string": "雇佣价格:固定6金币/名(每人最多雇佣2名)",
+    "_string": "我的待雇佣市场里长: 2\n(占槽位每次需 6 金币)",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
     "_actualFontSize": 30,
     "_fontSize": 30,
     "_fontFamily": "Arial",
     "_lineHeight": 40,
-    "_overflow": 0,
+    "_overflow": 2,
     "_enableWrapText": true,
     "_font": null,
     "_isSystemFontUsed": true,
@@ -8942,8 +8942,8 @@
     },
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": 20,
-      "y": -164.186,
+      "x": 0,
+      "y": -188.186,
       "z": 0
     },
     "_lrot": {
@@ -8983,7 +8983,7 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 556.4449999999999,
+      "width": 450,
       "height": 0
     },
     "_anchorPoint": {
@@ -9021,8 +9021,8 @@
     "_paddingRight": 0,
     "_paddingTop": 0,
     "_paddingBottom": 0,
-    "_spacingX": 20,
-    "_spacingY": 20,
+    "_spacingX": 15,
+    "_spacingY": 5,
     "_verticalDirection": 1,
     "_horizontalDirection": 0,
     "_constraint": 2,
@@ -9227,7 +9227,9 @@
     "playerResourceLabel": {
       "__id__": 34
     },
-    "hireInfoLabel": null,
+    "hireInfoLabel": {
+      "__id__": 352
+    },
     "btnTabMarket": {
       "__id__": 43
     },
