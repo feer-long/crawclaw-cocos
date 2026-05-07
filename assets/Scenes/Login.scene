@@ -654,7 +654,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 0,
-      "y": -547.4599999999999,
+      "y": -539.25,
       "z": 0
     },
     "_lrot": {
@@ -740,7 +740,7 @@
     "__prefab": null,
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 200,
+      "width": 300,
       "height": 50
     },
     "_anchorPoint": {
@@ -773,14 +773,17 @@
     "_string": "进入大厅",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
-    "_actualFontSize": 35,
-    "_fontSize": 35,
+    "_actualFontSize": 50,
+    "_fontSize": 50,
     "_fontFamily": "Arial",
-    "_lineHeight": 40,
+    "_lineHeight": 50,
     "_overflow": 1,
     "_enableWrapText": false,
-    "_font": null,
-    "_isSystemFontUsed": true,
+    "_font": {
+      "__uuid__": "a84e033d-09e7-4c9a-80ad-a5748b51145f",
+      "__expectedType__": "cc.TTFFont"
+    },
+    "_isSystemFontUsed": false,
     "_spacingX": 0,
     "_isItalic": false,
     "_isBold": false,
@@ -825,7 +828,7 @@
     "_contentSize": {
       "__type__": "cc.Size",
       "width": 173.32000715947441,
-      "height": 40
+      "height": 50
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -954,7 +957,7 @@
     "_left": 0,
     "_right": 0,
     "_top": 1084.917,
-    "_bottom": 0.05,
+    "_bottom": 0.04625187406296852,
     "_horizontalCenter": 0,
     "_verticalCenter": 0,
     "_isAbsLeft": true,

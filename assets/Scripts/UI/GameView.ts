@@ -20,7 +20,12 @@ export class GameView extends Component {
     @property(Label) public roundLabel: Label = null;
     @property(Label) public phaseLabel: Label = null;
 
-    @property(Prefab) public slotPrefab: Prefab = null;
+    @property(Prefab) public slotShrimpPrefab: Prefab = null;
+    @property(Prefab) public slotMarketPrefab: Prefab = null;
+    @property(Prefab) public slotBreedingPrefab: Prefab = null;
+    @property(Prefab) public slotTributePrefab: Prefab = null;
+    @property(Prefab) public slotDowntownPrefab: Prefab = null;
+
     @property(Prefab) public popupPrefab: Prefab = null;
     @property(Prefab) public marketPopupPrefab: Prefab = null;
     @property(Prefab) public breedingPopupPrefab: Prefab = null;
@@ -107,7 +112,6 @@ export class GameView extends Component {
                 const node = instantiate(this.lobsterSelectPopupPrefab);
                 this.node.addChild(node);
                 node.setSiblingIndex(this.node.children.length - 1);
-                // 传入 viewOnly 标志位
                 node.getComponent(LobsterSelectPopup)?.init({
                     viewOnly: true,
                     playerName: data.playerName,
@@ -386,21 +390,23 @@ export class GameView extends Component {
         if (gameState.areas) {
             const effectiveLiZhang = hasPlacedThisTurn ? 0 : myLiZhang;
             const currentRound = gameState.currentRound || 1;
-            this.renderArea(gameState.areas.shrimp_catching, this.areaShrimp, 'shrimp_catching', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, currentRound);
-            this.renderArea(gameState.areas.seafood_market, this.areaMarket, 'seafood_market', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, currentRound);
-            this.renderArea(gameState.areas.breeding, this.areaBreeding, 'breeding', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, currentRound);
+
+            this.renderArea(gameState.areas.shrimp_catching, this.areaShrimp, 'shrimp_catching', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, currentRound, this.slotShrimpPrefab);
+            this.renderArea(gameState.areas.seafood_market, this.areaMarket, 'seafood_market', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, currentRound, this.slotMarketPrefab);
+            this.renderArea(gameState.areas.breeding, this.areaBreeding, 'breeding', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, currentRound, this.slotBreedingPrefab);
 
             const tributeData = gameState.areas.tribute;
             if (tributeData) {
-                this.renderArea(tributeData, this.areaTributeNormal, 'tribute', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, currentRound, [0, 1, 2]);
-                this.renderArea(tributeData, this.areaTributeChallenge, 'tribute', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, currentRound, [3, 4, 5, 6, 7]);
+                this.renderArea(tributeData, this.areaTributeNormal, 'tribute', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, currentRound, this.slotTributePrefab, [0, 1, 2]);
+                this.renderArea(tributeData, this.areaTributeChallenge, 'tribute', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, currentRound, this.slotTributePrefab, [3, 4, 5]);
             }
-            this.renderArea(gameState.areas.marketplace, this.areaDowntown, 'marketplace', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, currentRound);
+            this.renderArea(gameState.areas.marketplace, this.areaDowntown, 'marketplace', players, isMyTurn, effectiveLiZhang, lastPlacement, hasPlacedThisTurn, currentRound, this.slotDowntownPrefab);
         }
     }
 
-    private renderArea(areaData: any, containerNode: Node, areaId: string, players: any[], isMyTurn: boolean, effectiveLiZhang: number, lastPlacement: any, hasPlacedThisTurn: boolean, currentRound: number, customIndices?: number[]) {
-        if (!areaData || !containerNode) return;
+    private renderArea(areaData: any, containerNode: Node, areaId: string, players: any[], isMyTurn: boolean, effectiveLiZhang: number, lastPlacement: any, hasPlacedThisTurn: boolean, currentRound: number, prefabToUse: Prefab, customIndices?: number[]) {
+        if (!areaData || !containerNode || !prefabToUse) return;
+
         containerNode.removeAllChildren();
         const slots = areaData.slots || [];
         const myLocalLastArea = cc.sys.localStorage.getItem('myLastPlacedArea');
@@ -409,8 +415,10 @@ export class GameView extends Component {
 
         for (let idx of indicesToRender) {
             if (idx >= slots.length) continue;
-            const slotNode = instantiate(this.slotPrefab);
+
+            const slotNode = instantiate(prefabToUse);
             containerNode.addChild(slotNode);
+
             const occupantId = slots[idx];
             const isLastPlaced = (lastPlacement && Number(lastPlacement.playerId) === Number(this.localPlayerId) && lastPlacement.areaName === areaId && lastPlacement.slotIndex === idx) ||
                 (occupantId == this.localPlayerId && hasPlacedThisTurn && myLocalLastArea === areaId && myLocalLastSlot === idx);
@@ -418,10 +426,8 @@ export class GameView extends Component {
             let canPlace = isMyTurn && effectiveLiZhang > 0 && occupantId === null;
             let failReason = "";
 
-            // 1. 回合限制检查 (独立于玩家是否有里长，确保始终置灰)
-            if (areaId === 'tribute' && idx === 2 && currentRound < 4) {
-                failReason = "上供区此席位在第4回合才开放";
-            } else if (areaId === 'marketplace') {
+            // 【核心修复3】：去掉了上供区的第四回合限制
+            if (areaId === 'marketplace') {
                 if (idx === 0 && currentRound < 2) failReason = "闹市区1号格在第2回合才开放";
                 else if (idx === 1 && currentRound < 3) failReason = "闹市区2号格在第3回合才开放";
                 else if (idx === 2 && currentRound < 4) failReason = "闹市区3号格在第4回合才开放";
