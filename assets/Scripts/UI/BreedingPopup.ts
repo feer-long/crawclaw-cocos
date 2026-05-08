@@ -76,8 +76,8 @@ export class BreedingPopup extends Component {
 
             const label = btnNode.getComponentInChildren(Label);
 
-            if (lobster.grade === 'royal' || lobster.title || lobster.name === '长鳌虾' || lobster.name === '红头紫') {
-                if (label) label.string = `👑${lobster.title || lobster.name || '虾王'}\n(已满级)`;
+            if (lobster.grade === 'royal') {
+                if (label) label.string = `虾王\n(已满级)`;
                 const btn = btnNode.getComponent(Button);
                 if (btn) btn.interactable = false; // 禁用按钮
                 btnNode.getComponent(Sprite).color = new Color(150, 150, 150); // 变灰

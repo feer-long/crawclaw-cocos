@@ -1,6 +1,6 @@
 import { _decorator, Component, Label, Button, Node, instantiate, Color, Sprite } from 'cc';
 import { NetworkManager } from '../Network/NetworkManager';
-import { GRADE_NAMES, getGradeValue } from '../Data/GameConstants';
+import { GRADE_NAMES, GRADE_NAMES_WITH_SCORE, getGradeValue } from '../Data/GameConstants';
 const { ccclass, property } = _decorator;
 
 
@@ -114,10 +114,10 @@ export class TributePopup extends Component {
         const titles = this.player.titleCards || [];
 
         lobsters.forEach((l: any, idx: number) => {
-            this.myInventory.push({ type: 'lobster', data: l, originalIndex: idx, id: l.id || `lob_${idx}` });
+            this.myInventory.push({ data: l, originalIndex: idx, id: l.id });
         });
         titles.forEach((t: any, idx: number) => {
-            this.myInventory.push({ type: 'title', data: t, originalIndex: lobsters.length + idx, id: t.id || `title_${idx}` });
+            this.myInventory.push({ data: t, originalIndex: lobsters.length + idx, id: t.id });
         });
     }
 
@@ -165,7 +165,7 @@ export class TributePopup extends Component {
         if (this.player.seaweed < reqSeaweed) return false;
         if (this.player.cages < reqCages) return false;
 
-        let myLobs = this.myInventory.map(item => item.type === 'title' ? 4 : getGradeValue(item.data.grade));
+        let myLobs = this.myInventory.map(item => getGradeValue(item.data.grade));
         myLobs.sort((a, b) => a - b);
 
         let reqLobs: number[] = [];
@@ -352,19 +352,15 @@ export class TributePopup extends Component {
 
             const label = node.getComponentInChildren(Label);
             if (label) {
-                if (item.type === 'lobster') {
-                    if (item.data.grade === 'royal' && (item.data.title || item.data.name)) {
-                        label.string = `🔖[${item.data.title || item.data.name}](4分)`;
-                    } else {
-                        label.string = GRADE_NAMES[item.data.grade] || item.data.grade;
-                    }
+                if (item.data.grade) {
+                    label.string = GRADE_NAMES_WITH_SCORE[item.data.grade] || item.data.grade;
                 } else {
                     label.string = `🔖[${item.data.name}](4分)`;
                 }
             }
 
-            const val = item.type === 'title' ? 4 : getGradeValue(item.data.grade);
-            (node as any)._itemData = { id: item.id, val: val, originalIndex: item.originalIndex, isTitle: item.type === 'title' };
+            const val = getGradeValue(item.data.grade);
+            (node as any)._itemData = { id: item.id, val: val, originalIndex: item.originalIndex, isTitle: !item.data.grade };
 
             node.on(Button.EventType.CLICK, () => {
                 const idxInSelected = this.selectedItemIds.indexOf(item.id);
@@ -408,7 +404,7 @@ export class TributePopup extends Component {
         for (const itemId of this.selectedItemIds) {
             const item = this.myInventory.find(i => i.id === itemId);
             if (item) {
-                if (item.type === 'title' || (item.type === 'lobster' && (item.data.title || item.data.name))) {
+                if (!item.data.grade || item.data.name) {
                     hasTitleBonus = true;
                     break;
                 }
@@ -581,7 +577,7 @@ export class TributePopup extends Component {
         let hasTitleBonus = false;
         for (const itemId of this.selectedItemIds) {
             const item = this.myInventory.find(i => i.id === itemId);
-            if (item && (item.type === 'title' || (item.type === 'lobster' && (item.data.title || item.data.name)))) {
+            if (item && (!item.data.grade || item.data.name)) {
                 hasTitleBonus = true;
                 break;
             }

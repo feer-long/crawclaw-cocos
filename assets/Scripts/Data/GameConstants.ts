@@ -35,7 +35,7 @@ export const VALUE_MAP = [1, 2, 3, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 9, 10];
  * 获取品级对应的数值
  */
 export function getGradeValue(grade: string): number {
-    return GRADE_VALUES[grade] || 0;
+    return GRADE_VALUES[grade] || 4;
 }
 /**
  * 计算预估得分（对齐终局结算逻辑）
@@ -87,8 +87,7 @@ export function calculateEstimatedScore(player: any, gameState: any): any {
 
     let lobstersScore = 0;
     (player.lobsters || []).forEach((l: any) => {
-        const isRoyalTitle = (l.grade === 'royal' && (l.title || l.name)) || l.name === '红头紫' || l.name === '长鳌虾';
-        if (isRoyalTitle || l.grade === 'royal') {
+        if (l.grade === 'royal') {
             lobstersScore += 8;
         } else if (l.grade === 'grade1') {
             lobstersScore += 5;

@@ -90,14 +90,18 @@ export class BattlePopup extends Component {
         const activePlayerId = this.battleData.activePlayerId;
 
         this.leftNameLabel.string = `🛡️ ${p1.name} (防守方)`;
-        this.leftLobsterLabel.string = `${p1.lobsterName} (${p1.diceType}面骰)`;
+        const p1SkillDesc = p1.skillDesc || "";
+        this.leftLobsterLabel.string = `${p1.lobsterName} (${p1.diceType}面骰)${p1SkillDesc ? '\n技能: ' + p1SkillDesc : ''}`;
         this.leftDmgLabel.string = `累计受伤: ${p1.dmgTaken}`;
-        this.leftCritLabel.string = `暴击率: ${Math.min(100, p1.dmgTaken * 20)}%`;
+        // 【核心修改】直接取后端传来的解耦计算后的暴击概率
+        this.leftCritLabel.string = `暴击率: ${Math.round((p1.critChance || 0) * 100)}%`;
 
         this.rightNameLabel.string = `⚔️ ${p2.name} (挑战方)`;
-        this.rightLobsterLabel.string = `${p2.lobsterName} (${p2.diceType}面骰)`;
+        const p2SkillDesc = p2.skillDesc || "";
+        this.rightLobsterLabel.string = `${p2.lobsterName} (${p2.diceType}面骰)${p2SkillDesc ? '\n技能: ' + p2SkillDesc : ''}`;
         this.rightDmgLabel.string = `累计受伤: ${p2.dmgTaken}`;
-        this.rightCritLabel.string = `暴击率: ${Math.min(100, p2.dmgTaken * 20)}%`;
+        // 【核心修改】直接取后端传来的解耦计算后的暴击概率
+        this.rightCritLabel.string = `暴击率: ${Math.round((p2.critChance || 0) * 100)}%`;
 
         if (this.leftDiceNode) {
             this.setDiceImage(this.leftDiceNode, p1.diceType);
@@ -119,9 +123,6 @@ export class BattlePopup extends Component {
             this.rightCardContainer.removeAllChildren();
         }
 
-        // ==========================================
-        // 【核心修复】：奖励选择界面的渲染
-        // ==========================================
         if (currentPhase === 'reward_choice') {
             this.statusLabel.string = "🏆 战斗结束！等待胜者选择奖励...";
             if (this.localPlayerId === this.battleData.winnerId && this.rewardNode) {
@@ -129,14 +130,14 @@ export class BattlePopup extends Component {
                 const myData = (p1.id === this.localPlayerId) ? p1 : p2;
                 const btnUpgrade = this.rewardNode.getChildByName('BtnUpgrade')?.getComponent(Button);
                 if (btnUpgrade) {
-                    if (myData.lobsterGrade === 'royal' || myData.lobsterGrade === '虾王' || myData.lobsterGrade === '长鳌虾' || myData.lobsterGrade === '红头紫') {
-                        btnUpgrade.interactable = false;
-                        const lbl = btnUpgrade.node.getComponentInChildren(Label);
-                        if (lbl) lbl.string = "已是满级(不可升)";
-                    } else {
+                    if (myData.lobsterGrade !== 'royal') {
                         btnUpgrade.interactable = true;
                         const lbl = btnUpgrade.node.getComponentInChildren(Label);
                         if (lbl) lbl.string = "出战龙虾升1品";
+                    } else {
+                        btnUpgrade.interactable = false;
+                        const lbl = btnUpgrade.node.getComponentInChildren(Label);
+                        if (lbl) lbl.string = "已是满级";
                     }
                 }
             }

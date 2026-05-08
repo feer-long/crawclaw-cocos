@@ -50,8 +50,8 @@ export class LobsterSelectPopup extends Component {
                 }
 
                 this.myInventory = [];
-                if (data.lobsters) data.lobsters.forEach((l: any) => this.myInventory.push({ type: 'lobster', data: l }));
-                if (data.titles) data.titles.forEach((t: any) => this.myInventory.push({ type: 'title', data: t }));
+                if (data.lobsters) data.lobsters.forEach((l: any) => this.myInventory.push({ data: l }));
+                if (data.titles) data.titles.forEach((t: any) => this.myInventory.push({ data: t }));
 
                 if (this.lobsterScrollViewNode) this.lobsterScrollViewNode.active = true;
                 if (this.itemTemplate) this.itemTemplate.active = false;
@@ -93,10 +93,6 @@ export class LobsterSelectPopup extends Component {
         }
     }
 
-    private getGradeValue(grade: string): number {
-        return getGradeValue(grade);
-    }
-
     private loadAndCheckArmies(gameState: any) {
         if (!gameState) return;
         const me = gameState.players.find((p: any) => p.id === this.localPlayerId);
@@ -110,15 +106,15 @@ export class LobsterSelectPopup extends Component {
         const lobsters = me.lobsters || [];
         const titles = me.titleCards || [];
 
-        lobsters.forEach((l: any) => { this.myInventory.push({ type: 'lobster', data: l }); });
-        titles.forEach((t: any) => { this.myInventory.push({ type: 'title', data: t }); });
+        lobsters.forEach((l: any) => { this.myInventory.push({ data: l }); });
+        titles.forEach((t: any) => { this.myInventory.push({ data: t }); });
 
         this.oppValidCount = 0;
         if (opponent) {
             const oppLobsters = opponent.lobsters || [];
             const oppTitles = opponent.titleCards || [];
             oppLobsters.forEach((l: any) => {
-                if (this.getGradeValue(l.grade) >= 1 && l.used !== true) this.oppValidCount++;
+                if (getGradeValue(l.grade) >= 1 && l.used !== true) this.oppValidCount++;
             });
             oppTitles.forEach((t: any) => {
                 if (t.used !== true) this.oppValidCount++;
@@ -169,31 +165,17 @@ export class LobsterSelectPopup extends Component {
             node.active = true;
             this.lobsterScrollViewContent.addChild(node);
 
-            let baseName = "";
-            let val = 0;
-            if (item.type === 'lobster') {
-                val = this.getGradeValue(item.data.grade);
-                if (GRADE_NAMES[item.data.grade]) {
-                    baseName = GRADE_NAMES[item.data.grade];
-                    if (item.data.grade === 'royal' && (item.data.title || item.data.name)) {
-                        baseName = `🔖[${item.data.title || item.data.name}]`;
-                        val = 4;
-                    }
-                } else {
-                    baseName = `🔖[${item.data.grade || item.data.name}]`;
-                    val = 4;
-                }
-            } else {
-                baseName = `🔖[${item.data.name}]`;
-                val = 4;
-            }
+            const baseName = item.data.name || GRADE_NAMES[item.data.grade];
+            const val = getGradeValue(item.data.grade) || 4;
 
             const isUsed = item.data.used === true;
             // 【修改】如果是查看模式，所有龙虾都不置灰；否则按战斗规则过滤
             const canFight = this.isViewOnly ? true : (val >= 1 && !isUsed);
             if (canFight) this.myValidCount++;
 
-            (node as any)._itemData = { index: i, canFight: canFight, isUsed: isUsed, val: val, baseName: baseName };
+            const skillDesc = item.data.description || "";
+
+            (node as any)._itemData = { index: i, canFight: canFight, isUsed: isUsed, val: val, baseName: baseName, skillDesc: skillDesc };
 
             if (!this.isViewOnly) {
                 node.on(Button.EventType.CLICK, () => {
@@ -246,8 +228,18 @@ export class LobsterSelectPopup extends Component {
             }
 
             allLabels.forEach(l => {
-                if (l === targetLabel) l.string = finalString;
-                else l.string = "";
+                if (l === targetLabel) {
+                    l.string = finalString;
+                } else if (l.node.name === 'EffectLabel' || l.node.name === 'DescLabel') {
+                    l.string = itemData.skillDesc || "";
+                } else if (allLabels.length > 1 && l !== targetLabel) {
+                    // 如果没有明确命名的 Label，且有多个 Label，尝试把第二个作为描述
+                    if (l.string === "" || l.string === finalString) {
+                        l.string = itemData.skillDesc || "";
+                    }
+                } else {
+                    l.string = "";
+                }
             });
         });
 
