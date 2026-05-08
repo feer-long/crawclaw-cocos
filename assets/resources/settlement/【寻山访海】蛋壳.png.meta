@@ -1,0 +1,134 @@
+{
+  "ver": "1.0.27",
+  "importer": "image",
+  "imported": true,
+  "uuid": "f8b32bbe-b6a4-4f56-9f33-4b339d799147",
+  "files": [
+    ".json",
+    ".png"
+  ],
+  "subMetas": {
+    "6c48a": {
+      "importer": "texture",
+      "uuid": "f8b32bbe-b6a4-4f56-9f33-4b339d799147@6c48a",
+      "displayName": "【寻山访海】蛋壳",
+      "id": "6c48a",
+      "name": "texture",
+      "userData": {
+        "wrapModeS": "clamp-to-edge",
+        "wrapModeT": "clamp-to-edge",
+        "imageUuidOrDatabaseUri": "f8b32bbe-b6a4-4f56-9f33-4b339d799147",
+        "isUuid": true,
+        "visible": false,
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "none",
+        "anisotropy": 0
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "f9941": {
+      "importer": "sprite-frame",
+      "uuid": "f8b32bbe-b6a4-4f56-9f33-4b339d799147@f9941",
+      "displayName": "【寻山访海】蛋壳",
+      "id": "f9941",
+      "name": "spriteFrame",
+      "userData": {
+        "trimThreshold": 1,
+        "rotated": false,
+        "offsetX": 38.5,
+        "offsetY": 15,
+        "trimX": 225,
+        "trimY": 63,
+        "width": 1627,
+        "height": 1474,
+        "rawWidth": 2000,
+        "rawHeight": 1630,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "packable": true,
+        "pixelsToUnit": 100,
+        "pivotX": 0.5,
+        "pivotY": 0.5,
+        "meshType": 0,
+        "vertices": {
+          "rawPosition": [
+            -813.5,
+            -737,
+            0,
+            813.5,
+            -737,
+            0,
+            -813.5,
+            737,
+            0,
+            813.5,
+            737,
+            0
+          ],
+          "indexes": [
+            0,
+            1,
+            2,
+            2,
+            1,
+            3
+          ],
+          "uv": [
+            225,
+            1567,
+            1852,
+            1567,
+            225,
+            93,
+            1852,
+            93
+          ],
+          "nuv": [
+            0.1125,
+            0.05705521472392638,
+            0.926,
+            0.05705521472392638,
+            0.1125,
+            0.9613496932515337,
+            0.926,
+            0.9613496932515337
+          ],
+          "minPos": [
+            -813.5,
+            -737,
+            0
+          ],
+          "maxPos": [
+            813.5,
+            737,
+            0
+          ]
+        },
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "f8b32bbe-b6a4-4f56-9f33-4b339d799147@6c48a",
+        "atlasUuid": "",
+        "trimType": "auto"
+      },
+      "ver": "1.0.12",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "type": "sprite-frame",
+    "fixAlphaTransparencyArtifacts": false,
+    "hasAlpha": true,
+    "redirect": "f8b32bbe-b6a4-4f56-9f33-4b339d799147@6c48a"
+  }
+}

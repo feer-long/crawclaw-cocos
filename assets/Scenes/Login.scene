@@ -654,7 +654,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 0,
-      "y": -539.25,
+      "y": -546.96,
       "z": 0
     },
     "_lrot": {
@@ -666,8 +666,8 @@
     },
     "_lscale": {
       "__type__": "cc.Vec3",
-      "x": 2.406,
-      "y": 2.642,
+      "x": 1,
+      "y": 1,
       "z": 2.706
     },
     "_mobility": 0,
@@ -714,8 +714,8 @@
     },
     "_lscale": {
       "__type__": "cc.Vec3",
-      "x": 0.5,
-      "y": 0.5,
+      "x": 1,
+      "y": 1,
       "z": 1
     },
     "_mobility": 0,
@@ -740,8 +740,8 @@
     "__prefab": null,
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 300,
-      "height": 50
+      "width": 400,
+      "height": 100
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -773,10 +773,10 @@
     "_string": "进入大厅",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
-    "_actualFontSize": 50,
-    "_fontSize": 50,
+    "_actualFontSize": 70,
+    "_fontSize": 70,
     "_fontFamily": "Arial",
-    "_lineHeight": 50,
+    "_lineHeight": 70,
     "_overflow": 1,
     "_enableWrapText": false,
     "_font": {
@@ -827,8 +827,8 @@
     "__prefab": null,
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 173.32000715947441,
-      "height": 50
+      "width": 400,
+      "height": 100
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -957,7 +957,7 @@
     "_left": 0,
     "_right": 0,
     "_top": 1084.917,
-    "_bottom": 0.04625187406296852,
+    "_bottom": 0.05250374812593702,
     "_horizontalCenter": 0,
     "_verticalCenter": 0,
     "_isAbsLeft": true,

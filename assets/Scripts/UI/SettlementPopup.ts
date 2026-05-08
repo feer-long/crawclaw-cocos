@@ -38,18 +38,18 @@ export class SettlementPopup extends Component {
         NetworkManager.instance.eventTarget.on('error', this._onError, this);
 
         const areaNames: any = {
-            'shrimp_catching': '🦐 捕虾区',
+            'shrimp_catching': '寻山访海',
             'seafood_market': '🐟 海鲜市场',
             'breeding': '🧪 养蛊区',
             'tribute': '⛩️ 上供区',
             'marketplace': '🏮 闹市区'
         };
 
-        this.titleLabel.string = `${areaNames[this.areaType] || this.areaType} 结算`;
+        this.titleLabel.string = `${areaNames[this.areaType] || this.areaType}`;
         this.descLabel.string = `剩余操作次数：${actionCount}`;
 
         if (data.lastResult) {
-            this.resultLabel.string = `🎉 上一步结果：${data.lastResult}`;
+            this.resultLabel.string = `上一步结果：${data.lastResult}`;
         } else {
             this.resultLabel.string = "请开始你的操作";
         }
@@ -60,11 +60,11 @@ export class SettlementPopup extends Component {
         if (this.btnClose) this.btnClose.active = false;
 
         if (this.currentStep === 'waiting_confirm') {
-            this.descLabel.string += "\n\n👉 点击下方按钮进行抽取！";
+            // this.descLabel.string += "\n\n👉 点击下方按钮进行抽取！";
             if (this.btnConfirm) this.btnConfirm.active = true;
         }
         else if (this.currentStep === 'waiting_choice') {
-            this.descLabel.string += "\n\n🎁 抽到了【龙虾或海草】！请选择：";
+            // this.descLabel.string += "\n\n🎁 抽到了【幼型灵螯或琅玕仙草】！请选择：";
             if (this.btnChooseLobster) this.btnChooseLobster.active = true;
             if (this.btnChooseSeaweed) this.btnChooseSeaweed.active = true;
         }
@@ -88,7 +88,7 @@ export class SettlementPopup extends Component {
 
         const card = data.data.card;
         const choices = data.data.choices || [];
-        const resType = card.costResourceType === 'coins' ? '金币' : '海草';
+        const resType = card.costResourceType === 'coins' ? '山海贝币' : '琅玕仙草';
 
         this.titleLabel.string = "🏁 终局得分选择";
         this.descLabel.string = `由于你拥有【${card.name}】，你可以消耗${resType}来换取额外的德/望奖励！`;

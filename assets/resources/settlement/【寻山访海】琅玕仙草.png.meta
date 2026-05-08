@@ -1,0 +1,134 @@
+{
+  "ver": "1.0.27",
+  "importer": "image",
+  "imported": true,
+  "uuid": "67694742-50ad-4ba8-bf8e-3e9f008bc616",
+  "files": [
+    ".json",
+    ".png"
+  ],
+  "subMetas": {
+    "6c48a": {
+      "importer": "texture",
+      "uuid": "67694742-50ad-4ba8-bf8e-3e9f008bc616@6c48a",
+      "displayName": "【寻山访海】琅玕仙草",
+      "id": "6c48a",
+      "name": "texture",
+      "userData": {
+        "wrapModeS": "clamp-to-edge",
+        "wrapModeT": "clamp-to-edge",
+        "imageUuidOrDatabaseUri": "67694742-50ad-4ba8-bf8e-3e9f008bc616",
+        "isUuid": true,
+        "visible": false,
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "none",
+        "anisotropy": 0
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "f9941": {
+      "importer": "sprite-frame",
+      "uuid": "67694742-50ad-4ba8-bf8e-3e9f008bc616@f9941",
+      "displayName": "【寻山访海】琅玕仙草",
+      "id": "f9941",
+      "name": "spriteFrame",
+      "userData": {
+        "trimThreshold": 1,
+        "rotated": false,
+        "offsetX": -14,
+        "offsetY": 21.5,
+        "trimX": 61,
+        "trimY": 12,
+        "width": 1627,
+        "height": 1933,
+        "rawWidth": 1777,
+        "rawHeight": 2000,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "packable": true,
+        "pixelsToUnit": 100,
+        "pivotX": 0.5,
+        "pivotY": 0.5,
+        "meshType": 0,
+        "vertices": {
+          "rawPosition": [
+            -813.5,
+            -966.5,
+            0,
+            813.5,
+            -966.5,
+            0,
+            -813.5,
+            966.5,
+            0,
+            813.5,
+            966.5,
+            0
+          ],
+          "indexes": [
+            0,
+            1,
+            2,
+            2,
+            1,
+            3
+          ],
+          "uv": [
+            61,
+            1988,
+            1688,
+            1988,
+            61,
+            55,
+            1688,
+            55
+          ],
+          "nuv": [
+            0.03432751828925155,
+            0.0275,
+            0.9499155880697805,
+            0.0275,
+            0.03432751828925155,
+            0.994,
+            0.9499155880697805,
+            0.994
+          ],
+          "minPos": [
+            -813.5,
+            -966.5,
+            0
+          ],
+          "maxPos": [
+            813.5,
+            966.5,
+            0
+          ]
+        },
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "67694742-50ad-4ba8-bf8e-3e9f008bc616@6c48a",
+        "atlasUuid": "",
+        "trimType": "auto"
+      },
+      "ver": "1.0.12",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "type": "sprite-frame",
+    "fixAlphaTransparencyArtifacts": false,
+    "hasAlpha": true,
+    "redirect": "67694742-50ad-4ba8-bf8e-3e9f008bc616@6c48a"
+  }
+}
