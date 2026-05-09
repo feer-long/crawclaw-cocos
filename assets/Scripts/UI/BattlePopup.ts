@@ -9,6 +9,7 @@ export class BattlePopup extends Component {
 
     @property(Label) public leftNameLabel: Label = null;
     @property(Label) public leftLobsterLabel: Label = null;
+    @property(Label) public leftLobsterSkillLabel: Label = null;
     @property(Label) public leftDmgLabel: Label = null;
     @property(Label) public leftCritLabel: Label = null;
     @property(Sprite) public leftDiceNode: Sprite = null;
@@ -16,6 +17,7 @@ export class BattlePopup extends Component {
 
     @property(Label) public rightNameLabel: Label = null;
     @property(Label) public rightLobsterLabel: Label = null;
+    @property(Label) public rightLobsterSkillLabel: Label = null;
     @property(Label) public rightDmgLabel: Label = null;
     @property(Label) public rightCritLabel: Label = null;
     @property(Sprite) public rightDiceNode: Sprite = null;
@@ -90,15 +92,15 @@ export class BattlePopup extends Component {
         const activePlayerId = this.battleData.activePlayerId;
 
         this.leftNameLabel.string = `🛡️ ${p1.name} (防守方)`;
-        const p1SkillDesc = p1.skillDesc || "";
-        this.leftLobsterLabel.string = `${p1.lobsterName} (${p1.diceType}面骰)${p1SkillDesc ? '\n技能: ' + p1SkillDesc : ''}`;
+        this.leftLobsterLabel.string = `${p1.lobsterName} (${p1.diceType}面骰)`;
+        this.leftLobsterSkillLabel.string = `技能:(${p1.skillDesc || "无"})`;
         this.leftDmgLabel.string = `累计受伤: ${p1.dmgTaken}`;
         // 【核心修改】直接取后端传来的解耦计算后的暴击概率
         this.leftCritLabel.string = `暴击率: ${Math.round((p1.critChance || 0) * 100)}%`;
 
         this.rightNameLabel.string = `⚔️ ${p2.name} (挑战方)`;
-        const p2SkillDesc = p2.skillDesc || "";
-        this.rightLobsterLabel.string = `${p2.lobsterName} (${p2.diceType}面骰)${p2SkillDesc ? '\n技能: ' + p2SkillDesc : ''}`;
+        this.rightLobsterLabel.string = `${p2.lobsterName} (${p2.diceType}面骰)`;
+        this.rightLobsterSkillLabel.string = `技能:(${p2.skillDesc || "无"})`;
         this.rightDmgLabel.string = `累计受伤: ${p2.dmgTaken}`;
         // 【核心修改】直接取后端传来的解耦计算后的暴击概率
         this.rightCritLabel.string = `暴击率: ${Math.round((p2.critChance || 0) * 100)}%`;
