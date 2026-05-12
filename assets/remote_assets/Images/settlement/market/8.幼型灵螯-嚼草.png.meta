@@ -1,0 +1,134 @@
+{
+  "ver": "1.0.27",
+  "importer": "image",
+  "imported": true,
+  "uuid": "50929a98-4f6f-44a7-8a31-6ed0105bc09f",
+  "files": [
+    ".json",
+    ".png"
+  ],
+  "subMetas": {
+    "6c48a": {
+      "importer": "texture",
+      "uuid": "50929a98-4f6f-44a7-8a31-6ed0105bc09f@6c48a",
+      "displayName": "8.幼型灵螯-嚼草",
+      "id": "6c48a",
+      "name": "texture",
+      "userData": {
+        "wrapModeS": "clamp-to-edge",
+        "wrapModeT": "clamp-to-edge",
+        "imageUuidOrDatabaseUri": "50929a98-4f6f-44a7-8a31-6ed0105bc09f",
+        "isUuid": true,
+        "visible": false,
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "none",
+        "anisotropy": 0
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "f9941": {
+      "importer": "sprite-frame",
+      "uuid": "50929a98-4f6f-44a7-8a31-6ed0105bc09f@f9941",
+      "displayName": "8.幼型灵螯-嚼草",
+      "id": "f9941",
+      "name": "spriteFrame",
+      "userData": {
+        "trimThreshold": 1,
+        "rotated": false,
+        "offsetX": 17,
+        "offsetY": 3,
+        "trimX": 248,
+        "trimY": 146,
+        "width": 566,
+        "height": 695,
+        "rawWidth": 1028,
+        "rawHeight": 993,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "packable": true,
+        "pixelsToUnit": 100,
+        "pivotX": 0.5,
+        "pivotY": 0.5,
+        "meshType": 0,
+        "vertices": {
+          "rawPosition": [
+            -283,
+            -347.5,
+            0,
+            283,
+            -347.5,
+            0,
+            -283,
+            347.5,
+            0,
+            283,
+            347.5,
+            0
+          ],
+          "indexes": [
+            0,
+            1,
+            2,
+            2,
+            1,
+            3
+          ],
+          "uv": [
+            248,
+            847,
+            814,
+            847,
+            248,
+            152,
+            814,
+            152
+          ],
+          "nuv": [
+            0.24124513618677043,
+            0.15307150050352467,
+            0.791828793774319,
+            0.15307150050352467,
+            0.24124513618677043,
+            0.8529707955689829,
+            0.791828793774319,
+            0.8529707955689829
+          ],
+          "minPos": [
+            -283,
+            -347.5,
+            0
+          ],
+          "maxPos": [
+            283,
+            347.5,
+            0
+          ]
+        },
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "50929a98-4f6f-44a7-8a31-6ed0105bc09f@6c48a",
+        "atlasUuid": "",
+        "trimType": "auto"
+      },
+      "ver": "1.0.12",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "type": "sprite-frame",
+    "fixAlphaTransparencyArtifacts": false,
+    "hasAlpha": true,
+    "redirect": "50929a98-4f6f-44a7-8a31-6ed0105bc09f@6c48a"
+  }
+}

@@ -323,7 +323,7 @@
       "a": 255
     },
     "_spriteFrame": {
-      "__uuid__": "dadf411e-a644-4a2b-85e4-7192cdae1ee0@f9941",
+      "__uuid__": "f63611ce-a15a-4f94-93ca-a4cc9dde55c7@f9941",
       "__expectedType__": "cc.SpriteFrame"
     },
     "_type": 0,
@@ -431,7 +431,7 @@
     "__prefab": null,
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 746,
+      "width": 744,
       "height": 196
     },
     "_anchorPoint": {
@@ -773,20 +773,17 @@
     "_string": "进入大厅",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
-    "_actualFontSize": 70,
-    "_fontSize": 70,
+    "_actualFontSize": 50,
+    "_fontSize": 50,
     "_fontFamily": "Arial",
     "_lineHeight": 70,
     "_overflow": 1,
     "_enableWrapText": false,
-    "_font": {
-      "__uuid__": "a84e033d-09e7-4c9a-80ad-a5748b51145f",
-      "__expectedType__": "cc.TTFFont"
-    },
-    "_isSystemFontUsed": false,
+    "_font": null,
+    "_isSystemFontUsed": true,
     "_spacingX": 0,
     "_isItalic": false,
-    "_isBold": false,
+    "_isBold": true,
     "_isUnderline": false,
     "_underlineHeight": 2,
     "_cacheMode": 0,
@@ -1032,8 +1029,8 @@
     "__prefab": null,
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 935,
-      "height": 1587
+      "width": 934,
+      "height": 1585
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -1141,7 +1138,7 @@
     "__prefab": null,
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 1223,
+      "width": 1220,
       "height": 1590
     },
     "_anchorPoint": {
@@ -1699,7 +1696,7 @@
     "_contentSize": {
       "__type__": "cc.Size",
       "width": 1125,
-      "height": 935
+      "height": 934
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",

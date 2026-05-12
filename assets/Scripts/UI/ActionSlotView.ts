@@ -10,10 +10,12 @@ export class ActionSlotView extends Component {
     @property(Label) public actionTimesLabel: Label = null;
 
     @property(Sprite) public playerSprite: Sprite = null;
+
+    // 父节点：只用来控制显示/隐藏
     @property(Node) public rewardNode: Node = null;
 
+    // 子节点：用来替换图片和专门调节缩放比
     @property(Node) public firstFlagSprite: Node = null;
-
     @property(Sprite) public rewardSprite: Sprite = null;
     @property(Label) public labelReward: Label = null;
     @property(Label) public rewardLabel: Label = null;
@@ -41,6 +43,12 @@ export class ActionSlotView extends Component {
         this.canCancel = canCancel;
         this.failReason = failReason;
 
+        // 【致命 Bug 修复】：重新呼叫原生的 getSlotInfo 方法
+        const slotInfo = this.getSlotInfo(areaId, slotIndex);
+        let rewardStr = slotInfo.reward;
+        let countStr = slotInfo.count;
+        let isNoReward = (rewardStr === "");
+
         // ==========================================
         // 1. 初始化还原节点状态
         // ==========================================
@@ -52,41 +60,20 @@ export class ActionSlotView extends Component {
         if (this.actionCountLabel) this.actionCountLabel.node.active = true;
         if (this.actionTimesLabel) this.actionTimesLabel.node.active = true;
 
-        let rewardStr = "";
-        let countStr = "";
-        let isNoReward = false;
-
         // ==========================================
         // 2. 五大区域定制化排版与数值逻辑
         // ==========================================
         switch (areaId) {
             case 'shrimp_catching':
-                if (slotIndex === 0) {
-                    rewardStr = "笼×1"; countStr = "1";
-                    if (this.firstFlagSprite) this.firstFlagSprite.active = true;
-                }
-                else if (slotIndex === 1) { rewardStr = "笼×1"; countStr = "2"; }
-                else if (slotIndex === 2) { rewardStr = "金×1"; countStr = "3"; }
-                else if (slotIndex === 3) { isNoReward = true; countStr = "4"; }
-
+                if (slotIndex === 0 && this.firstFlagSprite) this.firstFlagSprite.active = true;
                 if (!isNoReward) this.applyRewardScale(rewardStr, 0.022, 0.056, 0.056);
                 break;
 
             case 'seafood_market':
-                if (slotIndex === 0) { rewardStr = "金×1"; countStr = "2"; }
-                else if (slotIndex === 1) { isNoReward = true; countStr = "3"; }
-                else if (slotIndex === 2) { rewardStr = "金×1"; countStr = "3"; }
-                else if (slotIndex === 3) { rewardStr = "金×2"; countStr = "3"; }
-
                 if (!isNoReward) this.applyRewardScale(rewardStr, 0.022, 0.056, 0.056);
                 break;
 
             case 'breeding':
-                if (slotIndex === 0) { rewardStr = "草×1"; countStr = "1"; }
-                else if (slotIndex === 1) { isNoReward = true; countStr = "2"; }
-                else if (slotIndex === 2) { rewardStr = "金×1"; countStr = "2"; }
-                else if (slotIndex === 3) { isNoReward = true; countStr = "3"; }
-
                 if (!isNoReward) this.applyRewardScale(rewardStr, 0.022, 0.056, 0.056);
                 break;
 
@@ -97,10 +84,16 @@ export class ActionSlotView extends Component {
 
                 if (slotIndex < 3) {
                     if (this.labelReward) this.labelReward.string = "顺序";
-                    if (this.rewardLabel) this.rewardLabel.string = (slotIndex + 1).toString();
+                    if (this.rewardLabel) {
+                        this.rewardLabel.string = (slotIndex + 1).toString();
+                        this.rewardLabel.node.active = true; // 强制数字展示，不受 ×1 隐藏逻辑影响
+                    }
                 } else {
                     if (this.labelReward) this.labelReward.string = "挑战";
-                    if (this.rewardLabel) this.rewardLabel.string = (slotIndex - 2).toString();
+                    if (this.rewardLabel) {
+                        this.rewardLabel.string = (slotIndex - 2).toString();
+                        this.rewardLabel.node.active = true;
+                    }
                 }
                 break;
 
@@ -113,16 +106,19 @@ export class ActionSlotView extends Component {
                     if (this.rewardLabel) this.rewardLabel.node.active = false;
                     if (this.labelReward) this.labelReward.string = "第2回合+";
                 } else if (slotIndex === 1) {
-                    rewardStr = "金×1";
                     if (this.labelReward) this.labelReward.string = "奖励";
+                    this.applyRewardScale(rewardStr, 0.076, 0.076, 0.076);
                 } else if (slotIndex === 2) {
-                    rewardStr = "金×2";
                     if (this.labelReward) this.labelReward.string = "奖励";
-                }
-
-                if (slotIndex > 0) {
                     this.applyRewardScale(rewardStr, 0.076, 0.076, 0.076);
                 }
+                break;
+
+            case 'hire_headman':
+                isNoReward = true;
+                if (this.actionCountLabel) this.actionCountLabel.node.active = false;
+                if (this.actionTimesLabel) this.actionTimesLabel.node.active = false;
+                if (this.rewardNode) this.rewardNode.active = false;
                 break;
         }
 
@@ -132,18 +128,16 @@ export class ActionSlotView extends Component {
         if (isNoReward) {
             if (this.rewardNode) this.rewardNode.active = false;
 
-            // 【核心修复1】：强行关闭 Widget 组件，保证代码控制坐标绝对生效！
-            if (this.actionCountLabel) {
+            if (this.actionCountLabel && this.actionCountLabel.node.active) {
+                // 【核心修复】：扒掉 Widget 的外衣，坐标修改立刻生效！
                 const widget = this.actionCountLabel.getComponent(Widget);
                 if (widget) widget.enabled = false;
-
                 const pos = this.actionCountLabel.node.position;
                 this.actionCountLabel.node.setPosition(new Vec3(pos.x, -83, pos.z));
             }
-            if (this.actionTimesLabel) {
+            if (this.actionTimesLabel && this.actionTimesLabel.node.active) {
                 const widget = this.actionTimesLabel.getComponent(Widget);
                 if (widget) widget.enabled = false;
-
                 const pos = this.actionTimesLabel.node.position;
                 this.actionTimesLabel.node.setPosition(new Vec3(pos.x, -83, pos.z));
             }
@@ -177,6 +171,53 @@ export class ActionSlotView extends Component {
     }
 
     // ==========================================
+    // 重出江湖的数据引擎：剥离了多余后缀的清净版
+    // ==========================================
+    private getSlotInfo(areaId: string, index: number): { reward: string, count: string } {
+        let reward = "", count = "";
+        switch (areaId) {
+            case 'shrimp_catching':
+                if (index === 0) { reward = "笼×1"; count = "1"; } // 剥离：+先手
+                else if (index === 1) { reward = "笼×1"; count = "2"; }
+                else if (index === 2) { reward = "金×1"; count = "3"; }
+                else if (index === 3) { reward = ""; count = "4"; }
+                break;
+            case 'seafood_market':
+                if (index === 0) { reward = "金×1"; count = "2"; }
+                else if (index === 1) { reward = ""; count = "3"; }
+                else if (index === 2) { reward = "金×1"; count = "3"; }
+                else if (index === 3) { reward = "金×2"; count = "3"; }
+                break;
+            case 'breeding':
+                if (index === 0) { reward = "草×1"; count = "1"; }
+                else if (index === 1) { reward = ""; count = "2"; }
+                else if (index === 2) { reward = "金×1"; count = "2"; }
+                else if (index === 3) { reward = ""; count = "3"; }
+                break;
+            case 'tribute':
+                if (index === 0) { reward = ""; count = "1"; }
+                else if (index === 1) { reward = ""; count = "1"; }
+                else if (index === 2) { reward = ""; count = "1"; }
+                else if (index === 3) { reward = ""; count = "1"; }
+                else if (index === 4) { reward = ""; count = "1"; }
+                else if (index === 5) { reward = ""; count = "1"; }
+                break;
+            case 'marketplace':
+                if (index === 0) { reward = "第2回合+"; count = "1"; }
+                else if (index === 1) { reward = "金×1"; count = "1"; } // 剥离：(3+)
+                else if (index === 2) { reward = "金×2"; count = "1"; } // 剥离：(4+)
+                break;
+            case 'hire_headman':
+                if (index === 0 || index === 1) { reward = "草×1"; count = "2回+"; }
+                else if (index === 2 || index === 3) { reward = "普虾×1"; count = "3回+"; }
+                else if (index === 4 || index === 5) { reward = "3品虾×1"; count = "4回+"; }
+                else if (index === 6 || index === 7) { reward = "2品虾×1"; count = "4回+"; }
+                break;
+        }
+        return { reward, count };
+    }
+
+    // ==========================================
     // 资源图标解析与尺寸调节器
     // ==========================================
     private applyRewardScale(rewardStr: string, cageScale: number, grassScale: number, coinScale: number) {
@@ -198,7 +239,7 @@ export class ActionSlotView extends Component {
             numStr = rewardStr.replace("笼", "");
         }
 
-        // 【核心修复2】：如果是“×1”，直接隐藏数字 Label！
+        // 【极简美学】：如果是 ×1，绝不啰嗦，直接隐藏！
         if (numStr === "×1" || numStr === "x1" || numStr === "1") {
             this.rewardLabel.node.active = false;
         } else {
@@ -214,6 +255,13 @@ export class ActionSlotView extends Component {
         }
 
         if (this.canPlace) {
+            if (this.areaId === 'hire_headman') {
+                NetworkManager.instance.send('clientGameAction', 'areaAction', {
+                    payload: { actionType: 'hire_headman_slot', payload: { slotIndex: this.slotIndex } }
+                });
+                return;
+            }
+
             NetworkManager.instance.send('clientGameAction', 'placeHeadman', {
                 payload: { areaIndex: this.areaId, slotIndex: this.slotIndex }
             });

@@ -1,4 +1,4 @@
-import { _decorator, Component, Label, Node, director, Color, profiler } from 'cc';
+import { _decorator, Component, Label, Node, director, Color, profiler, assetManager } from 'cc';
 import { NetworkManager } from '../Network/NetworkManager';
 const { ccclass, property } = _decorator;
 
@@ -132,6 +132,16 @@ export class RoomView extends Component {
         cc.sys.localStorage.setItem("currentGameState", JSON.stringify(data.gameState || data));
 
         // 我们下一步要建的 Game 场景
-        director.loadScene("Game");
+        // director.loadScene("Game");
+        assetManager.loadBundle('remote_assets', (err, bundle) => {
+            if (err) {
+                console.error('加载远程包失败:', err);
+                return;
+            }
+            bundle.loadScene('Game', (err, sceneAsset) => {
+                if (err) return console.error('加载游戏场景失败:', err);
+                director.runScene(sceneAsset);
+            });
+        });
     }
 }

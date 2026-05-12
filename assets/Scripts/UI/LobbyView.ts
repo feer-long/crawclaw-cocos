@@ -1,4 +1,4 @@
-import { _decorator, Component, EditBox, Label, director, profiler } from 'cc';
+import { _decorator, Component, EditBox, Label, director, profiler, assetManager } from 'cc';
 import { NetworkManager } from '../Network/NetworkManager';
 const { ccclass, property } = _decorator;
 
@@ -87,7 +87,19 @@ export class LobbyView extends Component {
         this.statusLabel.string = "错误: " + (data.message || "未知错误");
     }
 
+    // private goToRoomScene() {
+    //     director.loadScene("Room");
+    // }
     private goToRoomScene() {
-        director.loadScene("Room");
+        assetManager.loadBundle('remote_assets', (err, bundle) => {
+            if (err) {
+                console.error('加载远程包失败:', err);
+                return;
+            }
+            bundle.loadScene('Room', (err, sceneAsset) => {
+                if (err) return console.error('加载房间场景失败:', err);
+                director.runScene(sceneAsset);
+            });
+        });
     }
 }

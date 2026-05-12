@@ -1,4 +1,4 @@
-import { _decorator, Component, Label, Button, Node, Prefab, instantiate, Color, Sprite } from 'cc';
+import { _decorator, Component, Label, Button, Node, Prefab, instantiate, Color, Sprite, ScrollView } from 'cc';
 import { NetworkManager } from '../Network/NetworkManager';
 import { ActionSlotView } from './ActionSlotView';
 const { ccclass, property } = _decorator;
@@ -7,69 +7,83 @@ const { ccclass, property } = _decorator;
 export class MarketPopup extends Component {
 
     @property(Label) public marketInfoLabel: Label = null;
-    @property(Label) public currentPriceLabel: Label = null;
     @property(Label) public actionCountLabel: Label = null;
     @property(Label) public playerResourceLabel: Label = null;
-
     @property(Label) public hireInfoLabel: Label = null;
 
-    @property(Node) public btnTabMarket: Node = null;
-    @property(Node) public btnTabHire: Node = null;
-    @property(Node) public viewMarket: Node = null;
-    @property(Node) public viewHire: Node = null;
+    // 滑动屏相关
+    @property(ScrollView) public mainScrollView: ScrollView = null;
+    @property(Button) public btnSlideDoor: Button = null;
 
     @property(Node) public hireSlotContainer: Node = null;
     @property(Prefab) public slotPrefab: Prefab = null;
 
-    @property(Button) public btnBuyLobster: Button = null;
-    @property(Button) public btnSellLobster: Button = null;
-    @property(Button) public btnBuyCage: Button = null;
-    @property(Button) public btnSellCage: Button = null;
-    @property(Button) public btnBuySeaweed: Button = null;
-    @property(Button) public btnSellSeaweed: Button = null;
-    @property(Button) public btnBuySeaweed3: Button = null;
-    @property(Button) public btnSellSeaweed3: Button = null;
-    @property(Button) public btnSkip: Button = null;
+    // 左侧分类按钮
+    @property(Node) public btnCatLobster: Node = null;
+    @property(Node) public btnCatSeaweed: Node = null;
+    @property(Node) public btnCatCage: Node = null;
+    @property(Node) public btnCatBatch: Node = null;
 
+    // 右侧动态操作面板
+    @property(Label) public dynamicPriceLabel: Label = null;
+    @property(Button) public btnDynamicBuy: Button = null;
+    @property(Button) public btnDynamicSell: Button = null;
+
+    @property(Button) public btnSkip: Button = null;
     @property([Node]) public lobsterIcons: Node[] = [];
 
     private actionCount: number = 0;
     private rawData: any = null;
 
+    // 状态机：当前选中的分类
+    private currentCategory: 'lobster' | 'seaweed' | 'cage' | 'batch' = 'lobster';
+    private isShowingHire: boolean = false;
+
     public init(data: any) {
         this.rawData = data;
         this.actionCount = data.actionCount || 0;
+        this.currentCategory = 'lobster'; // 默认选中龙虾
+        this.isShowingHire = false;
 
         this.node.active = true;
+
+        // 初始化滚动条到最左边（交易区）
+        if (this.mainScrollView) {
+            this.mainScrollView.scrollToLeft(0, false);
+        }
+
         this.refreshMarketView();
         this.refreshHireView();
-
-        if (!this.viewMarket.active && !this.viewHire.active) {
-            this.showTab('market');
-        }
     }
 
-    public onBtnTabMarketClicked() { this.showTab('market'); }
-    public onBtnTabHireClicked() { this.showTab('hire'); }
+    // ==========================================
+    // 移门滑动逻辑
+    // ==========================================
+    public onBtnSlideDoorClicked() {
+        if (!this.mainScrollView) return;
 
-    private showTab(tabName: string) {
-        const colorSelected = new Color(200, 200, 200);
-        const colorNormal = new Color(255, 255, 255);
-
-        if (tabName === 'market') {
-            this.viewMarket.active = true;
-            this.viewHire.active = false;
-            if (this.btnTabMarket?.getComponent(Sprite)) this.btnTabMarket.getComponent(Sprite).color = colorSelected;
-            if (this.btnTabHire?.getComponent(Sprite)) this.btnTabHire.getComponent(Sprite).color = colorNormal;
+        this.isShowingHire = !this.isShowingHire;
+        // 使用 0.3 秒的平滑动画滚动
+        if (this.isShowingHire) {
+            this.mainScrollView.scrollToRight(0.3, true);
+            this.setBtnText(this.btnSlideDoor, "▶");
         } else {
-            this.viewMarket.active = false;
-            this.viewHire.active = true;
-            if (this.btnTabHire?.getComponent(Sprite)) this.btnTabHire.getComponent(Sprite).color = colorSelected;
-            if (this.btnTabMarket?.getComponent(Sprite)) this.btnTabMarket.getComponent(Sprite).color = colorNormal;
+            this.mainScrollView.scrollToLeft(0.3, true);
+            this.setBtnText(this.btnSlideDoor, "◀");
         }
     }
+
+    // ==========================================
+    // 左侧分类点击逻辑
+    // ==========================================
+    public onSelectCatLobster() { this.currentCategory = 'lobster'; this.refreshMarketView(); }
+    public onSelectCatSeaweed() { this.currentCategory = 'seaweed'; this.refreshMarketView(); }
+    public onSelectCatCage() { this.currentCategory = 'cage'; this.refreshMarketView(); }
+    public onSelectCatBatch() { this.currentCategory = 'batch'; this.refreshMarketView(); }
 
     private refreshMarketView() {
+        if (!this.rawData || !this.rawData.prices) return;
+
         const prices = this.rawData.prices;
         const player = this.rawData.player;
         const marketLobsterCount = this.rawData.marketLobsterCount;
@@ -77,7 +91,6 @@ export class MarketPopup extends Component {
         this.actionCountLabel.string = `剩余操作次数：${this.actionCount}`;
         this.marketInfoLabel.string = `市场龙虾余量：${marketLobsterCount} / 8`;
 
-        // ========== 新增：检测并显示市场规则光环 ==========
         const hasMarketRule = player.permaBuffs && player.permaBuffs.includes('permaBuff_market_rule');
         if (hasMarketRule) {
             this.marketInfoLabel.string += '\n📌 市场规则：普通龙虾 ¥1/只 (不可卖出)';
@@ -85,42 +98,74 @@ export class MarketPopup extends Component {
 
         this.playerResourceLabel.string = `拥有：💰${player.coins} 🌿${player.seaweed} 🛒${player.cages} 🦞${player.lobsters.length}`;
 
-        if (this.currentPriceLabel) {
-            this.currentPriceLabel.string = `当前流通物价：龙虾 ${prices.buyLobster}金 | 虾笼 ${prices.buyCage}金 | 1草 1金 | 3草 4金`;
-        }
-
-        this.setBtnText(this.btnBuyLobster, `买入龙虾 (-${prices.buyLobster}金)`);
-        this.setBtnText(this.btnSellLobster, `卖出龙虾 (+${prices.sellLobster}金)`);
-        this.setBtnText(this.btnBuyCage, `买入虾笼 (-${prices.buyCage}金)`);
-        this.setBtnText(this.btnSellCage, `卖出虾笼 (+${prices.sellCage}金)`);
-        this.setBtnText(this.btnBuySeaweed, `买1草 (-1金)`);
-        this.setBtnText(this.btnSellSeaweed, `卖1草 (+1金)`);
-        this.setBtnText(this.btnBuySeaweed3, `买3草 (-4金)`);
-        this.setBtnText(this.btnSellSeaweed3, `卖3草 (+4金)`);
-
-        const normalLobsters = player.lobsters.filter((l: any) => !l.grade || l.grade === 'normal');
-
-        if (this.btnBuyLobster) this.btnBuyLobster.interactable = (player.coins >= prices.buyLobster && marketLobsterCount > 0);
-
-        // =====================================
-        // 【核心修复】：市场满了（达到8只），卖出按钮强制置灰
-        // =====================================
-        if (this.btnSellLobster) this.btnSellLobster.interactable = (normalLobsters.length > 0 && marketLobsterCount < 8);
-
-        if (this.btnBuyCage) this.btnBuyCage.interactable = (player.coins >= prices.buyCage);
-        if (this.btnSellCage) this.btnSellCage.interactable = (player.cages > 0);
-        if (this.btnBuySeaweed) this.btnBuySeaweed.interactable = (player.coins >= 1);
-        if (this.btnSellSeaweed) this.btnSellSeaweed.interactable = (player.seaweed >= 1);
-        if (this.btnBuySeaweed3) this.btnBuySeaweed3.interactable = (player.coins >= 4);
-        if (this.btnSellSeaweed3) this.btnSellSeaweed3.interactable = (player.seaweed >= 3);
-        if (this.btnSkip) this.btnSkip.interactable = true;
-
+        // 刷新龙虾架UI
         for (let i = 0; i < 8; i++) {
             if (this.lobsterIcons[i]) {
                 const hasLobster = i >= (8 - marketLobsterCount);
                 this.lobsterIcons[i].active = hasLobster;
             }
         }
+
+        // ==========================================
+        // 动态刷新分类高亮与右侧操作台
+        // ==========================================
+        this.updateCategoryHighlight();
+
+        const normalLobsters = player.lobsters.filter((l: any) => !l.grade || l.grade === 'normal');
+        let buyText = "", sellText = "";
+        let canBuy = false, canSell = false;
+
+        if (this.currentCategory === 'lobster') {
+            this.dynamicPriceLabel.string = `【幼型灵螯】\n当前物价：${prices.buyLobster}金`;
+            buyText = `买入 (-${prices.buyLobster}金)`;
+            sellText = `卖出 (+${prices.sellLobster}金)`;
+
+            canBuy = (player.coins >= prices.buyLobster && marketLobsterCount > 0);
+            canSell = (normalLobsters.length > 0 && marketLobsterCount < 8);
+        }
+        else if (this.currentCategory === 'seaweed') {
+            this.dynamicPriceLabel.string = `【琅玕仙草】\n当前物价：1金`;
+            buyText = `买入 (-1金)`;
+            sellText = `卖出 (+1金)`;
+
+            canBuy = (player.coins >= 1);
+            canSell = (player.seaweed >= 1);
+        }
+        else if (this.currentCategory === 'cage') {
+            this.dynamicPriceLabel.string = `【息壤灵鼎】\n当前物价：${prices.buyCage}金`;
+            buyText = `买入 (-${prices.buyCage}金)`;
+            sellText = `卖出 (+${prices.sellCage}金)`;
+
+            canBuy = (player.coins >= prices.buyCage);
+            canSell = (player.cages > 0);
+        }
+        else if (this.currentCategory === 'batch') {
+            this.dynamicPriceLabel.string = `【墟市批发】\n捆绑价：3株仙草 = 4金`;
+            buyText = `买3草 (-4金)`;
+            sellText = `卖3草 (+4金)`;
+
+            canBuy = (player.coins >= 4);
+            canSell = (player.seaweed >= 3);
+        }
+
+        // 渲染右侧按钮
+        this.setBtnText(this.btnDynamicBuy, buyText);
+        this.setBtnText(this.btnDynamicSell, sellText);
+
+        if (this.btnDynamicBuy) this.btnDynamicBuy.interactable = canBuy;
+        if (this.btnDynamicSell) this.btnDynamicSell.interactable = canSell;
+
+        if (this.btnSkip) this.btnSkip.interactable = true;
+    }
+
+    private updateCategoryHighlight() {
+        const colorSelected = new Color(100, 200, 100); // 选中变绿
+        const colorNormal = new Color(220, 220, 220); // 未选中灰白
+
+        if (this.btnCatLobster?.getComponent(Sprite)) this.btnCatLobster.getComponent(Sprite).color = (this.currentCategory === 'lobster') ? colorSelected : colorNormal;
+        if (this.btnCatSeaweed?.getComponent(Sprite)) this.btnCatSeaweed.getComponent(Sprite).color = (this.currentCategory === 'seaweed') ? colorSelected : colorNormal;
+        if (this.btnCatCage?.getComponent(Sprite)) this.btnCatCage.getComponent(Sprite).color = (this.currentCategory === 'cage') ? colorSelected : colorNormal;
+        if (this.btnCatBatch?.getComponent(Sprite)) this.btnCatBatch.getComponent(Sprite).color = (this.currentCategory === 'batch') ? colorSelected : colorNormal;
     }
 
     private refreshHireView() {
@@ -143,8 +188,8 @@ export class MarketPopup extends Component {
             let extraStr = "";
             for (let i = 0; i < availableExtra; i++) extraStr += "👷 ";
             for (let i = 0; i < hiredCount; i++) extraStr += "✔️(已雇) ";
-            this.hireInfoLabel.string = `我的待雇佣市场里长: ${extraStr}\n(占槽位每次需 6 金币)`;
-            this.hireInfoLabel.color = canAfford ? new Color(0, 120, 0) : new Color(200, 50, 50);
+            this.hireInfoLabel.string = `1名寻山客需6枚山海贝币，最多雇佣2名`;
+            this.hireInfoLabel.color = canAfford ? new Color(255, 255, 255) : new Color(200, 50, 50);
         }
 
         for (let i = 0; i < 8; i++) {
@@ -181,15 +226,26 @@ export class MarketPopup extends Component {
         }
     }
 
+    // ==========================================
+    // 右侧动态点击事件路由
+    // ==========================================
+    public onDynamicBuyClicked() {
+        if (this.currentCategory === 'lobster') this.sendMarketAction('buy_lobster');
+        else if (this.currentCategory === 'seaweed') this.sendMarketAction('buy_seaweed');
+        else if (this.currentCategory === 'cage') this.sendMarketAction('buy_cage');
+        else if (this.currentCategory === 'batch') this.sendMarketAction('buy_seaweed_3');
+    }
+
+    public onDynamicSellClicked() {
+        if (this.currentCategory === 'lobster') this.sendMarketAction('sell_lobster');
+        else if (this.currentCategory === 'seaweed') this.sendMarketAction('sell_seaweed');
+        else if (this.currentCategory === 'cage') this.sendMarketAction('sell_cage');
+        else if (this.currentCategory === 'batch') this.sendMarketAction('sell_seaweed_3');
+    }
+
     private sendMarketAction(actionString: string) {
-        if (this.btnBuyLobster) this.btnBuyLobster.interactable = false;
-        if (this.btnSellLobster) this.btnSellLobster.interactable = false;
-        if (this.btnBuySeaweed) this.btnBuySeaweed.interactable = false;
-        if (this.btnSellSeaweed) this.btnSellSeaweed.interactable = false;
-        if (this.btnBuySeaweed3) this.btnBuySeaweed3.interactable = false;
-        if (this.btnSellSeaweed3) this.btnSellSeaweed3.interactable = false;
-        if (this.btnBuyCage) this.btnBuyCage.interactable = false;
-        if (this.btnSellCage) this.btnSellCage.interactable = false;
+        if (this.btnDynamicBuy) this.btnDynamicBuy.interactable = false;
+        if (this.btnDynamicSell) this.btnDynamicSell.interactable = false;
         if (this.btnSkip) this.btnSkip.interactable = false;
 
         NetworkManager.instance.send('clientGameAction', 'areaAction', {
@@ -197,13 +253,5 @@ export class MarketPopup extends Component {
         });
     }
 
-    public onBtnBuyLobster() { this.sendMarketAction('buy_lobster'); }
-    public onBtnSellLobster() { this.sendMarketAction('sell_lobster'); }
-    public onBtnBuyCage() { this.sendMarketAction('buy_cage'); }
-    public onBtnSellCage() { this.sendMarketAction('sell_cage'); }
-    public onBtnBuySeaweed() { this.sendMarketAction('buy_seaweed'); }
-    public onBtnSellSeaweed() { this.sendMarketAction('sell_seaweed'); }
-    public onBtnBuySeaweed3() { this.sendMarketAction('buy_seaweed_3'); }
-    public onBtnSellSeaweed3() { this.sendMarketAction('sell_seaweed_3'); }
     public onBtnSkip() { this.sendMarketAction('skip'); }
 }

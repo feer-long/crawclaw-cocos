@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, EditBox, director, profiler } from 'cc';
+import { _decorator, Component, Node, EditBox, director, profiler, assetManager } from 'cc';
 import { NetworkManager } from '../Network/NetworkManager'; // 引入我们刚写的全局单例
 const { ccclass, property } = _decorator;
 
@@ -37,7 +37,21 @@ export class LoginView extends Component {
             // 成功的回调：连上了才跳转！
             () => {
                 console.log("连接大厅成功，准备切换场景...");
-                director.loadScene("Lobby");
+                // director.loadScene("Lobby");
+                console.log("准备下载远程资源并切换到大厅场景...");
+                assetManager.loadBundle('remote_assets', (err, bundle) => {
+                    if (err) {
+                        console.error('加载远程资源包失败:', err);
+                        return;
+                    }
+                    bundle.loadScene('Lobby', (err, sceneAsset) => {
+                        if (err) {
+                            console.error('加载大厅场景失败:', err);
+                            return;
+                        }
+                        director.runScene(sceneAsset);
+                    });
+                });
             },
             // 失败的回调
             () => {

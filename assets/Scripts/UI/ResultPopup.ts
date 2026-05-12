@@ -1,4 +1,4 @@
-import { _decorator, Component, Label, Node, instantiate, Color, director, Button, Layout } from 'cc';
+import { _decorator, Component, Label, Node, instantiate, Color, director, Button, Layout, assetManager } from 'cc';
 import { calculateEstimatedScore } from '../Data/GameConstants';
 const { ccclass, property } = _decorator;
 
@@ -124,6 +124,13 @@ export class ResultPopup extends Component {
         cc.sys.localStorage.removeItem('currentGameState');
         cc.sys.localStorage.removeItem('myLastPlacedArea');
         cc.sys.localStorage.removeItem('myLastPlacedSlot');
-        director.loadScene('Lobby');
+        // director.loadScene('Lobby');
+        assetManager.loadBundle('remote_assets', (err, bundle) => {
+            if (err) return console.error(err);
+            bundle.loadScene('Lobby', (err, sceneAsset) => {
+                if (err) return console.error(err);
+                director.runScene(sceneAsset);
+            });
+        });
     }
 }

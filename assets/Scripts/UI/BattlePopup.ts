@@ -1,4 +1,4 @@
-import { _decorator, Component, Label, Button, Node, instantiate, Sprite, tween, Vec3, RichText, ScrollView, Color, UIOpacity, UITransform, resources, SpriteFrame } from 'cc';
+import { _decorator, Component, Label, Button, Node, instantiate, Sprite, tween, Vec3, RichText, ScrollView, Color, UIOpacity, UITransform, resources, SpriteFrame, assetManager } from 'cc';
 import { NetworkManager } from '../Network/NetworkManager';
 const { ccclass, property } = _decorator;
 
@@ -255,15 +255,25 @@ export class BattlePopup extends Component {
     }
 
     private setDiceImage(diceNode: Sprite, diceType: number) {
-        const imagePath = `dice_d${diceType}/spriteFrame`;
-        resources.load(imagePath, SpriteFrame, (err, spriteFrame) => {
+        // 注意路径：这里写的是相对于 remote_assets 文件夹的内部路径
+        const imagePath = `/settlement/tribute/dice_d${diceType}/spriteFrame`;
+
+        // 1. 先加载名为 remote_assets 的远程 Bundle
+        assetManager.loadBundle('remote_assets', (err, bundle) => {
             if (err) {
-                console.error(`[BattlePopup] Failed to load ${imagePath}:`, err);
+                console.error('[BattlePopup] 远程包加载失败:', err);
                 return;
             }
-            if (diceNode) {
-                diceNode.spriteFrame = spriteFrame;
-            }
+            // 2. 从 Bundle 中加载具体的骰子图片
+            bundle.load(imagePath, SpriteFrame, (err, spriteFrame) => {
+                if (err) {
+                    console.error(`[BattlePopup] Failed to load ${imagePath}:`, err);
+                    return;
+                }
+                if (diceNode) {
+                    diceNode.spriteFrame = spriteFrame;
+                }
+            });
         });
     }
 
