@@ -166,7 +166,7 @@ export class LobsterSelectPopup extends Component {
             this.lobsterScrollViewContent.addChild(node);
 
             const baseName = item.data.name || GRADE_NAMES[item.data.grade];
-            const val = getGradeValue(item.data.grade) || 4;
+            const val = getGradeValue(item.data.grade) || 0;
 
             const isUsed = item.data.used === true;
             // 【修改】如果是查看模式，所有龙虾都不置灰；否则按战斗规则过滤
@@ -296,13 +296,33 @@ export class LobsterSelectPopup extends Component {
         }
 
         const selectedItem = this.myInventory[this.selectedItemIndex];
-        if (this.hintLabel) this.hintLabel.string = "⏳ 已准备就绪，正在等待对手选择...";
+
+        const gameStateStr = cc.sys.localStorage.getItem('currentGameState');
+        const gameState = gameStateStr ? JSON.parse(gameStateStr) : null;
+        const playerCount = gameState?.players?.length || 2;
+        const hasSpectators = playerCount > 2;
+
+        if (this.hintLabel) {
+            this.hintLabel.string = hasSpectators
+                ? "已准备就绪，等待观战玩家下注..."
+                : "已准备就绪，正在等待对手选择...";
+        }
+
+        const spectatorIds: number[] = [];
+        if (hasSpectators && gameState) {
+            for (const p of gameState.players) {
+                if (p.id !== this.currentBattle.challengerId && p.id !== this.currentBattle.defenderId) {
+                    spectatorIds.push(p.id);
+                }
+            }
+        }
 
         NetworkManager.instance.send('clientBattleAction', 'lobster_selected', {
             battleId: this.currentBattle.challengeSlot.toString(),
             challengerId: this.currentBattle.challengerId,
             defenderId: this.currentBattle.defenderId,
-            lobster: selectedItem.data
+            lobster: selectedItem.data,
+            spectators: spectatorIds
         });
     }
 }

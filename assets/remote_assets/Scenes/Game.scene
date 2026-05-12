@@ -5891,6 +5891,10 @@
       "__uuid__": "23d6332a-675e-4222-9644-b76a7a5935f7",
       "__expectedType__": "cc.Prefab"
     },
+    "betPopupPrefab": {
+      "__uuid__": "6b6d2262-88e0-4707-8976-4461ead2d8da",
+      "__expectedType__": "cc.Prefab"
+    },
     "areaShrimp": {
       "__id__": 30
     },

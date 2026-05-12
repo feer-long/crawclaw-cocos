@@ -12,6 +12,7 @@ import { ResultPopup } from './ResultPopup';
 import { CardListPopup } from './CardListPopup';
 import { PlayerStatusManager } from './PlayerStatusManager';
 import { DeWangTrackView } from './DeWangTrackView';
+import { BetPopup } from './BetPopup';
 const { ccclass, property } = _decorator;
 
 @ccclass('GameView')
@@ -36,6 +37,7 @@ export class GameView extends Component {
     @property(Prefab) public battlePopupPrefab: Prefab = null;
     @property(Prefab) public resultPopupPrefab: Prefab = null;
     @property(Prefab) public cardListPopupPrefab: Prefab = null;
+    @property(Prefab) public betPopupPrefab: Prefab = null;
 
     @property(Node) public areaShrimp: Node = null;
     @property(Node) public areaMarket: Node = null;
@@ -71,6 +73,8 @@ export class GameView extends Component {
         NetworkManager.instance.eventTarget.on('gameEnded', this.onGameEnded, this);
         NetworkManager.instance.eventTarget.on('endgameScoreChoiceRequired', this.onEndgameScoreChoiceRequired, this);
         NetworkManager.instance.eventTarget.on('ui_view_player_items', this.onViewPlayerItems, this);
+        NetworkManager.instance.eventTarget.on('arenaBettingStart', this.onArenaBettingStart, this);
+        NetworkManager.instance.eventTarget.on('arenaBettingComplete', this.onArenaBettingComplete, this);
 
         const pIdStr = cc.sys.localStorage.getItem('localPlayerId');
         if (pIdStr !== null) {
@@ -94,6 +98,8 @@ export class GameView extends Component {
         NetworkManager.instance.eventTarget.off('gameEnded', this.onGameEnded, this);
         NetworkManager.instance.eventTarget.off('endgameScoreChoiceRequired', this.onEndgameScoreChoiceRequired, this);
         NetworkManager.instance.eventTarget.off('ui_view_player_items', this.onViewPlayerItems, this);
+        NetworkManager.instance.eventTarget.off('arenaBettingStart', this.onArenaBettingStart, this);
+        NetworkManager.instance.eventTarget.off('arenaBettingComplete', this.onArenaBettingComplete, this);
     }
 
     private onViewPlayerItems(data: any) {
@@ -174,12 +180,48 @@ export class GameView extends Component {
                 this.currentPopupNode.getComponent(BattlePopup)?.updateBattleState(data.battleData);
             }
         } else if (actionType === 'battleEnded') {
+            if (data.betResults) {
+                const myResult = data.betResults[this.localPlayerId];
+                if (myResult && myResult.amount > 0) {
+                    this.phaseLabel.string = myResult.isCorrect
+                        ? `押注成功！投入 ${myResult.amount} 金币，获得 ${myResult.reward} 金币回报！`
+                        : `押注失败！投入的 ${myResult.amount} 金币已损失...`;
+                }
+            }
             const popupToClose = this.currentPopupNode;
             this.currentPopupNode = null;
             setTimeout(() => {
                 if (popupToClose && popupToClose.isValid) popupToClose.destroy();
             }, 1500);
         }
+    }
+
+    private onArenaBettingStart(data: any) {
+        const isSpectator = data.spectators && data.spectators.includes(this.localPlayerId);
+        const autoBet = data.autoBetSpectators && data.autoBetSpectators.includes(this.localPlayerId);
+
+        if (isSpectator && !autoBet) {
+            if (this.currentPopupNode && this.currentPopupNode.isValid) {
+                this.currentPopupNode.destroy();
+            }
+            if (this.betPopupPrefab) {
+                this.currentPopupNode = instantiate(this.betPopupPrefab);
+                this.currentPopupNode.name = 'BetPopup';
+                this.node.addChild(this.currentPopupNode);
+                const comp = this.currentPopupNode.getComponent('BetPopup');
+                if (comp) (comp as any).init(data);
+            }
+        } else {
+            this.phaseLabel.string = '观战玩家正在下注，等待完成后进入战斗...';
+            if (this.currentPopupNode && this.currentPopupNode.isValid && this.currentPopupNode.name === 'LobsterSelectPopup') {
+                this.currentPopupNode.destroy();
+                this.currentPopupNode = null;
+            }
+        }
+    }
+
+    private onArenaBettingComplete(data: any) {
+        this.phaseLabel.string = '下注完成，即将进入战斗！';
     }
 
     private showBattlePopup(name: string, prefab: Prefab, initData: any) {
@@ -243,7 +285,7 @@ export class GameView extends Component {
                 const needMarketplace = (data.areaType === 'marketplace');
                 const needTribute = (data.areaType === 'tribute');
 
-                if (this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !== 'LobsterSelectPopup' && this.currentPopupNode.name !== 'ResultPopup') {
+if (this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !== 'LobsterSelectPopup' && this.currentPopupNode.name !== 'ResultPopup' && this.currentPopupNode.name !== 'BetPopup') {
                     if (isMarket !== needMarket || isBreeding !== needBreeding || isMarketplace !== needMarketplace || isTribute !== needTribute) {
                         this.currentPopupNode.destroy();
                         this.currentPopupNode = null;
@@ -268,7 +310,7 @@ export class GameView extends Component {
                         this.currentPopupNode.getComponent('MarketplacePopup')?.init(data);
                     } else if (data.areaType === 'tribute') {
                         this.currentPopupNode.getComponent('TributePopup')?.init(data);
-                    } else if (this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !== 'LobsterSelectPopup' && this.currentPopupNode.name !== 'ResultPopup') {
+                    } else if (this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !== 'LobsterSelectPopup' && this.currentPopupNode.name !== 'ResultPopup' && this.currentPopupNode.name !== 'BetPopup') {
                         this.currentPopupNode.getComponent('SettlementPopup')?.init(data);
                     }
                 }
@@ -277,7 +319,7 @@ export class GameView extends Component {
 
         if (data.playerId !== null && data.playerId != this.localPlayerId) {
             this.phaseLabel.string = `结算阶段：等待 玩家 ${data.playerId} 操作...`;
-            if (this.currentPopupNode && this.currentPopupNode.isValid && this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !== 'LobsterSelectPopup' && this.currentPopupNode.name !== 'ResultPopup') {
+            if (this.currentPopupNode && this.currentPopupNode.isValid && this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !== 'LobsterSelectPopup' && this.currentPopupNode.name !== 'ResultPopup' && this.currentPopupNode.name !== 'BetPopup') {
                 this.currentPopupNode.destroy();
                 this.currentPopupNode = null;
             }
@@ -286,7 +328,7 @@ export class GameView extends Component {
 
     private onSettlementComplete(data: any) {
         this.phaseLabel.string = "本回合结算完成，准备进入下一回合！";
-        if (this.currentPopupNode && this.currentPopupNode.isValid && this.currentPopupNode.name !== 'ResultPopup') {
+        if (this.currentPopupNode && this.currentPopupNode.isValid && this.currentPopupNode.name !== 'ResultPopup' && this.currentPopupNode.name !== 'BetPopup') {
             this.currentPopupNode.destroy();
             this.currentPopupNode = null;
         }

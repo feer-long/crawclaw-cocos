@@ -40,11 +40,14 @@ export class BattlePopup extends Component {
     private localPlayerId: number = -1;
     private lastProcessedLog: string = "";
     private localCritCount: number = 0;
+    private isSpectator: boolean = false;
 
     public init(data: any) {
         this.battleData = data;
         const stateStr = cc.sys.localStorage.getItem('localPlayerId');
         this.localPlayerId = stateStr ? parseInt(stateStr) : -1;
+
+        this.isSpectator = (this.localPlayerId !== data.p1.id && this.localPlayerId !== data.p2.id);
 
         this.node.active = true;
         this.logText.string = "";
@@ -53,9 +56,13 @@ export class BattlePopup extends Component {
         if (this.rewardNode) this.rewardNode.active = false;
 
         const slotNum = data.defenderSlotIndex + 1;
-        if (this.titleLabel) this.titleLabel.string = `⚔️ 争夺 [${slotNum}号] 槽位决战 ⚔️`;
+        if (this.titleLabel) {
+            this.titleLabel.string = this.isSpectator
+                ? `观战模式 - 争夺 [${slotNum}号] 槽位决战`
+                : `争夺 [${slotNum}号] 槽位决战`;
+        }
 
-        this.addLog(`🔥 战斗开始！防守方【${data.p1.name}】先进行起步判定！`);
+        this.addLog(`战斗开始！防守方【${data.p1.name}】先进行起步判定！`);
         this.refreshUI();
     }
 
@@ -117,12 +124,40 @@ export class BattlePopup extends Component {
         this.btnSkipWeed.node.active = false;
         this.btnDrawHP.node.active = false;
 
-        const isMyTurn = (activePlayerId === this.localPlayerId);
-        const isTargetTurn = (this.battleData.targetPlayerId === this.localPlayerId);
+        const isMyTurn = !this.isSpectator && (activePlayerId === this.localPlayerId);
+        const isTargetTurn = !this.isSpectator && (this.battleData.targetPlayerId === this.localPlayerId);
 
         if (currentPhase !== 'hp_draw' && currentPhase !== 'show_hp_result') {
             this.leftCardContainer.removeAllChildren();
             this.rightCardContainer.removeAllChildren();
+        }
+
+        if (this.isSpectator) {
+            switch (currentPhase) {
+                case 'enrage_roll':
+                    this.statusLabel.string = "观战中：等待狂暴起步判定...";
+                    break;
+                case 'attack_roll':
+                    this.statusLabel.string = "观战中：等待攻击掷骰...";
+                    break;
+                case 'seaweed_choice':
+                    this.statusLabel.string = "观战中：等待对方决定是否吃草...";
+                    break;
+                case 'hp_draw':
+                    this.statusLabel.string = "观战中：等待受击方抽取血量卡...";
+                    this.renderHPCards(this.battleData.targetPlayerId, this.battleData.requiredHPCards);
+                    break;
+                case 'show_hp_result':
+                    break;
+                case 'reward_choice':
+                    this.statusLabel.string = `战斗结束！胜者【${this.battleData.winnerName}】正在选择奖励...`;
+                    break;
+                default:
+                    this.statusLabel.string = "观战中...";
+                    break;
+            }
+            if (this.rewardNode) this.rewardNode.active = false;
+            return;
         }
 
         if (currentPhase === 'reward_choice') {

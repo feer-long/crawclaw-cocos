@@ -35,7 +35,7 @@ export const VALUE_MAP = [1, 2, 3, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 9, 10];
  * 获取品级对应的数值
  */
 export function getGradeValue(grade: string): number {
-    return GRADE_VALUES[grade] || 4;
+    return GRADE_VALUES[grade] || 0;
 }
 /**
  * 计算预估得分（对齐终局结算逻辑）
