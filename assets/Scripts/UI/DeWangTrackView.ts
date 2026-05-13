@@ -1,9 +1,6 @@
 import { _decorator, Component, Node, Prefab, instantiate, Label, Vec3 } from 'cc';
 const { ccclass, property } = _decorator;
 
-// 对应的映射分数，下标 0-15 对应这 16 个值
-const VALUE_MAP = [1, 2, 3, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 9, 10];
-
 @ccclass('DeWangTrackView')
 export class DeWangTrackView extends Component {
     @property(Node) public deTrackContainer: Node = null; // 德轨道容器
@@ -77,7 +74,7 @@ export class DeWangTrackView extends Component {
         if (valueNode) {
             valueNode.active = showValue;
             if (showValue && valueLabel) {
-                valueLabel.string = `${VALUE_MAP[index]}`;
+                valueLabel.string = `${index}`;
             }
         } else {
             console.warn(`[DeWangTrackView] 第 ${index} 个格子未找到 ValueLabel`);

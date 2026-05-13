@@ -28,39 +28,22 @@ export const GRADE_VALUES: Record<string, number> = {
     'royal': 4
 };
 
-// 对应的映射分数，下标 0-15 对应这 16 个值
-export const VALUE_MAP = [1, 2, 3, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 9, 10];
-
 /**
  * 获取品级对应的数值
  */
 export function getGradeValue(grade: string): number {
     return GRADE_VALUES[grade] || 0;
 }
+
 /**
- * 计算预估得分（对齐终局结算逻辑）
+ * 计算预估得分（对齐终局结算逻辑 - 简化版，直接数值乘积）
  */
 export function calculateEstimatedScore(player: any, gameState: any): any {
     if (!player || !gameState) return { total: 0 };
 
-    const getBonus = (idx: number) => {
-        if (idx >= 14) return 5;
-        if (idx >= 13) return 4;
-        if (idx >= 11) return 3;
-        if (idx >= 9) return 2;
-        if (idx >= 7) return 1;
-        return 0;
-    };
-
-    const deIdx = Math.min(Math.max(player.de || 0, 0), 15);
-    const wangIdx = Math.min(Math.max(player.wang || 0, 0), 15);
-
-    const deValue = VALUE_MAP[deIdx];
-    const wangValue = VALUE_MAP[wangIdx];
-    const deBonus = getBonus(deIdx);
-    const wangBonus = getBonus(wangIdx);
-
-    const coreScore = (deValue * wangValue) + deBonus + wangBonus;
+    const de = player.de || 0;
+    const wang = player.wang || 0;
+    const coreScore = de * wang;
 
     // 2. 上供席位分
     const tavernScores: number[] = [];
@@ -110,12 +93,8 @@ export function calculateEstimatedScore(player: any, gameState: any): any {
     const total = coreScore + tavernTotal + resScore + bonusPoints;
 
     return {
-        deVal: deIdx,
-        wangVal: wangIdx,
-        deValue: deValue,
-        wangValue: wangValue,
-        deBonus: deBonus,
-        wangBonus: wangBonus,
+        deVal: de,
+        wangVal: wang,
         core: coreScore,
         tavernList: tavernScores,
         tavern: tavernTotal,

@@ -93,7 +93,7 @@ export class ResultPopup extends Component {
             // 详细算式渲染
             // ==========================================
             if (detailCore) {
-                detailCore.string = `核心乘积分 =（映射值德${res.deValue} * 望${res.wangValue}）+ 德奖${res.deBonus} + 望奖${res.wangBonus} = ${res.core}分`;
+                detailCore.string = `核心乘积分 = 德${res.deVal} * 望${res.wangVal} = ${res.core}分`;
             }
             if (detailTavern) detailTavern.string = `上供席位分 =（${res.tavernList.length > 0 ? res.tavernList.join(' + ') : '0'} = ${res.tavern}分）`;
             if (detailRes) detailRes.string = `资源转换分 =（金币折算${res.coinsScore} + 海草折算${res.seaweedScore} + 虾笼折算${res.cagesScore} + 龙虾折算${res.lobstersScore} = ${res.res}分）`;

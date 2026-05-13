@@ -408,20 +408,26 @@ if (this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !
             hasPlacedThisTurn = true;
         }
 
-        this.btnNextPlayer.active = true;
         const nextBtnComp = this.btnNextPlayer.getComponent(Button);
 
-        if (isMyTurn) {
-            if (hasPlacedThisTurn) {
-                this.phaseLabel.string = "工放阶段 (👉 已放置，可撤回，或点下一阶段)";
-                if (nextBtnComp) nextBtnComp.interactable = true;
-            } else {
-                this.phaseLabel.string = "工放阶段 (👉 请放置里长)";
+        if (gameState.phase === 'settlement') {
+            this.btnNextPlayer.active = false;
+            this.phaseLabel.string = "结算阶段 (⏳ 等待区域结算...)";
+            if (nextBtnComp) nextBtnComp.interactable = false;
+        } else {
+            this.btnNextPlayer.active = true;
+            if (isMyTurn) {
+                if (hasPlacedThisTurn) {
+                    this.phaseLabel.string = "工放阶段 (👉 已放置，可撤回，或点下一阶段)";
+                    if (nextBtnComp) nextBtnComp.interactable = true;
+                } else {
+                    this.phaseLabel.string = "工放阶段 (👉 请放置里长)";
+                    if (nextBtnComp) nextBtnComp.interactable = false;
+                }
+            } else if (gameState.phase === 'placement') {
+                this.phaseLabel.string = `(⏳ 等待 玩家 ${gameState.currentPlayerIndex} 行动...)`;
                 if (nextBtnComp) nextBtnComp.interactable = false;
             }
-        } else if (gameState.phase === 'placement') {
-            this.phaseLabel.string = `(⏳ 等待 玩家 ${gameState.currentPlayerIndex} 行动...)`;
-            if (nextBtnComp) nextBtnComp.interactable = false;
         }
 
         // ===== 新增：更新德望轨道 =====

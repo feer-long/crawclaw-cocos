@@ -20,12 +20,14 @@ export class SettlementPopup extends Component {
     private isWaitingResponse: boolean = false;
     private pendingAction: { actionType: string, payload: any } | null = null;
     private loadingTimer: number = null;
+    private lastClickTime: number = 0;
 
     public init(data: any) {
         this.unscheduleAllCallbacks();
         this._clearLoadingTimer();
         this.isWaitingResponse = false;
         this.pendingAction = null;
+        this.lastClickTime = 0;
 
         if (this.loadingLabel?.node) this.loadingLabel.active = false;
 
@@ -172,6 +174,12 @@ export class SettlementPopup extends Component {
         if (this.isWaitingResponse) {
             return;
         }
+
+        const now = Date.now();
+        if (now - this.lastClickTime < 300) {
+            return;
+        }
+        this.lastClickTime = now;
 
         this._startWaiting();
         this.pendingAction = action;
