@@ -21,6 +21,9 @@ export class WeChatAdapter {
         return this._instance;
     }
 
+    private _friendListCallbacks: Array<(friends: Friend[]) => void> = [];
+    private _shareCallbackHandler: ((query: { roomId?: string; inviter?: string }) => void) | null = null;
+
     public isWeChatEnvironment(): boolean {
         return typeof wx !== 'undefined';
     }
@@ -31,11 +34,10 @@ export class WeChatAdapter {
             return;
         }
         this.initShare();
+        this.initMessageListener();
     }
 
     private initShare(): void {
-        if (!this.isWeChatEnvironment()) return;
-
         wx.showShareMenu({
             withShareTicket: true,
             menus: ['shareAppMessage', 'shareTimeline']
@@ -49,6 +51,16 @@ export class WeChatAdapter {
         });
     }
 
+    private initMessageListener(): void {
+        wx.onMessage((data) => {
+            if (data.type === 'friendList') {
+                const friends = data.friends || [];
+                this._friendListCallbacks.forEach((cb) => cb(friends));
+                this._friendListCallbacks = [];
+            }
+        });
+    }
+
     public getFriendList(callback: (friends: Friend[]) => void): void {
         if (!this.isWeChatEnvironment()) {
             console.warn('当前不在微信小游戏环境');
@@ -56,18 +68,14 @@ export class WeChatAdapter {
             return;
         }
 
+        this._friendListCallbacks.push(callback);
+
         wx.getOpenDataContext().postMessage({
             type: 'getFriendList'
         });
-
-        wx.onMessage((data) => {
-            if (data.type === 'friendList') {
-                callback(data.friends || []);
-            }
-        });
     }
 
-    public getUserInfo(callback: (userInfo: UserInfo) => void): void {
+    public getUserInfo(callback: (userInfo: UserInfo | null) => void): void {
         if (!this.isWeChatEnvironment()) {
             console.warn('当前不在微信小游戏环境');
             callback(null);
@@ -96,12 +104,14 @@ export class WeChatAdapter {
             return;
         }
 
+        const encodedRoomId = encodeURIComponent(roomId);
+        const encodedPlayerName = encodeURIComponent(playerName);
+
         wx.shareAppMessage({
             title: `${playerName} 邀请你加入游戏`,
             imageUrl: 'invite_card.png',
-            query: `roomId=${roomId}&inviter=${playerName}`,
+            query: `roomId=${encodedRoomId}&inviter=${encodedPlayerName}`,
             success: () => {
-                console.log('分享成功');
                 callback(true);
             },
             fail: (err) => {
@@ -111,9 +121,13 @@ export class WeChatAdapter {
         });
     }
 
-    public handleShareCallback(query: any): void {
-        if (query && query.roomId) {
-            console.log('收到邀请回调:', query);
+    public handleShareCallback(query: { roomId?: string; inviter?: string }): void {
+        if (this._shareCallbackHandler) {
+            this._shareCallbackHandler(query);
         }
+    }
+
+    public onShareCallback(handler: (query: { roomId?: string; inviter?: string }) => void): void {
+        this._shareCallbackHandler = handler;
     }
 }
