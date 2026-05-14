@@ -22,8 +22,6 @@ export class WeChatAdapter {
     }
 
     private _friendListCallbacks: Array<{ callback: (friends: Friend[]) => void; timer: ReturnType<typeof setTimeout> }> = [];
-    private _shareCallbackHandler: ((query: { roomId?: string; playerName?: string }) => void) | null = null;
-
     private static readonly CALLBACK_TIMEOUT_MS = 10000;
 
     public isWeChatEnvironment(): boolean {
@@ -136,13 +134,4 @@ export class WeChatAdapter {
         });
     }
 
-    public handleShareCallback(query: { roomId?: string; playerName?: string }): void {
-        if (this._shareCallbackHandler) {
-            this._shareCallbackHandler(query);
-        }
-    }
-
-    public onShareCallback(handler: (query: { roomId?: string; playerName?: string }) => void): void {
-        this._shareCallbackHandler = handler;
-    }
 }
