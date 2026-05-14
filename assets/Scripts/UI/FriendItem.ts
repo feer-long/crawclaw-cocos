@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Label, Sprite } from 'cc';
+import { _decorator, Component, Node, Label, Sprite, SpriteFrame, assetManager, Texture2D } from 'cc';
 import { Friend } from '../WeChat/WeChatAdapter';
 
 const { ccclass, property } = _decorator;
@@ -24,6 +24,23 @@ export class FriendItem extends Component {
     public setFriendInfo(friend: Friend): void {
         this.friend = friend;
         this.nameLabel.string = friend.nickname;
+        this.loadAvatar(friend.avatarUrl);
+    }
+    
+    private loadAvatar(url: string): void {
+        if (!url || !this.avatarSprite) {
+            return;
+        }
+        
+        assetManager.loadRemote<Texture2D>(url, (err, texture) => {
+            if (err || !texture) {
+                return;
+            }
+            
+            const spriteFrame = new SpriteFrame();
+            spriteFrame.texture = texture;
+            this.avatarSprite.spriteFrame = spriteFrame;
+        });
     }
     
     public setOnInviteCallback(callback: () => void): void {

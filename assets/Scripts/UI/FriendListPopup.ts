@@ -21,12 +21,19 @@ export class FriendListPopup extends Component {
     @property(Node)
     public closeButton: Node = null;
     
+    @property(Label)
+    public statusLabel: Label = null;
+    
     private roomId: string = '';
     private playerName: string = '';
+    private isLoading: boolean = false;
     
     onLoad() {
         this.titleLabel.string = '邀请好友';
         this.closeButton.on(Node.EventType.TOUCH_END, this.onClose, this);
+        if (this.statusLabel) {
+            this.statusLabel.node.active = false;
+        }
     }
     
     public show(roomId: string, playerName: string): void {
@@ -44,8 +51,30 @@ export class FriendListPopup extends Component {
         this.hide();
     }
     
+    private showStatus(message: string): void {
+        if (this.statusLabel) {
+            this.statusLabel.string = message;
+            this.statusLabel.node.active = true;
+        }
+    }
+    
+    private hideStatus(): void {
+        if (this.statusLabel) {
+            this.statusLabel.node.active = false;
+        }
+    }
+    
     private loadFriendList(): void {
+        if (this.isLoading) {
+            return;
+        }
+        this.isLoading = true;
+        this.showStatus('正在加载好友列表...');
+        this.content.removeAllChildren();
+        
         WeChatAdapter.instance.getFriendList((friends) => {
+            this.isLoading = false;
+            this.hideStatus();
             this.renderFriendList(friends);
         });
     }
@@ -83,11 +112,15 @@ export class FriendListPopup extends Component {
     
     private onInviteFriend(friend: Friend): void {
         console.log('邀请好友:', friend.nickname);
+        this.showStatus(`正在向 ${friend.nickname} 发送邀请...`);
         InviteManager.instance.inviteFriend(this.roomId, this.playerName);
         this.showInviteSuccess(friend.nickname);
     }
     
     private showInviteSuccess(friendName: string): void {
-        console.log(`已向 ${friendName} 发送邀请`);
+        this.showStatus(`已向 ${friendName} 发送邀请`);
+        setTimeout(() => {
+            this.hideStatus();
+        }, 2000);
     }
 }
