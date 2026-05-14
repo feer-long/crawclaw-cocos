@@ -22,7 +22,7 @@ export class WeChatAdapter {
     }
 
     private _friendListCallbacks: Array<{ callback: (friends: Friend[]) => void; timer: ReturnType<typeof setTimeout> }> = [];
-    private _shareCallbackHandler: ((query: { roomId?: string; inviter?: string }) => void) | null = null;
+    private _shareCallbackHandler: ((query: { roomId?: string; playerName?: string }) => void) | null = null;
 
     private static readonly CALLBACK_TIMEOUT_MS = 10000;
 
@@ -125,7 +125,7 @@ export class WeChatAdapter {
         wx.shareAppMessage({
             title: `${playerName} 邀请你加入游戏`,
             imageUrl: 'invite_card.png',
-            query: `roomId=${encodedRoomId}&inviter=${encodedPlayerName}`,
+            query: `roomId=${encodedRoomId}&playerName=${encodedPlayerName}`,
             success: () => {
                 callback(true);
             },
@@ -136,13 +136,13 @@ export class WeChatAdapter {
         });
     }
 
-    public handleShareCallback(query: { roomId?: string; inviter?: string }): void {
+    public handleShareCallback(query: { roomId?: string; playerName?: string }): void {
         if (this._shareCallbackHandler) {
             this._shareCallbackHandler(query);
         }
     }
 
-    public onShareCallback(handler: (query: { roomId?: string; inviter?: string }) => void): void {
+    public onShareCallback(handler: (query: { roomId?: string; playerName?: string }) => void): void {
         this._shareCallbackHandler = handler;
     }
 }
