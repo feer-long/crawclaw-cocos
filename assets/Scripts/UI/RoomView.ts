@@ -1,7 +1,6 @@
-import { _decorator, Component, Label, Node, director, Color, profiler, assetManager } from 'cc';
+import { _decorator, Component, Label, Node, Button, director, Color, profiler, assetManager, sys } from 'cc';
 import { NetworkManager } from '../Network/NetworkManager';
 import { InviteManager } from '../WeChat/InviteManager';
-import { FriendListPopup } from './FriendListPopup';
 const { ccclass, property } = _decorator;
 
 @ccclass('RoomView')
@@ -23,9 +22,6 @@ export class RoomView extends Component {
     @property(Node)
     public btnStartGame: Node = null;
 
-    @property(Node)
-    public invitePopup: Node = null;
-
     private localPlayerId: number = -1;
     private isHost: boolean = false;
     private isReady: boolean = false;
@@ -37,9 +33,9 @@ export class RoomView extends Component {
         NetworkManager.instance.eventTarget.on('gameStarted', this.onGameStarted, this);
 
         // 读取大厅传过来的初始数据
-        const stateStr = cc.sys.localStorage.getItem('initialRoomState');
-        const pIdStr = cc.sys.localStorage.getItem('localPlayerId');
-        const roomId = cc.sys.localStorage.getItem("currentRoomId");
+        const stateStr = sys.localStorage.getItem('initialRoomState');
+        const pIdStr = sys.localStorage.getItem('localPlayerId');
+        const roomId = sys.localStorage.getItem("currentRoomId");
 
         if (stateStr && pIdStr) {
             this.localPlayerId = parseInt(pIdStr);
@@ -77,7 +73,7 @@ export class RoomView extends Component {
     }
 
     private refreshUI(gameState: any) {
-        const roomId = cc.sys.localStorage.getItem("currentRoomId");
+        const roomId = sys.localStorage.getItem("currentRoomId");
         this.titleLabel.string = `房间号: ${roomId}`;
 
         const players = gameState.players || [];
@@ -99,12 +95,14 @@ export class RoomView extends Component {
 
                 this.playerNames[i].string = nameStr;
                 this.playerReadyStatus[i].string = p.ready ? "已准备" : "未准备";
-                // 简单的颜色反馈：准备了变绿，没准备变红
                 this.playerReadyStatus[i].color = p.ready ? new Color(0, 255, 0) : new Color(255, 0, 0);
+                const btn = this.playerReadyStatus[i].getComponent(Button);
+                if (btn) btn.interactable = false;
             } else {
-                // 如果这个位置没人
                 this.playerNames[i].string = "等待加入...";
-                this.playerReadyStatus[i].string = "";
+                this.playerReadyStatus[i].string = "邀请好友";
+                const btn = this.playerReadyStatus[i].getComponent(Button);
+                if (btn) btn.interactable = true;
             }
         }
 
@@ -135,22 +133,16 @@ export class RoomView extends Component {
     }
 
     public onEmptySlotClick(slotIndex: number): void {
-        if (this.invitePopup) {
-            const roomId = cc.sys.localStorage.getItem("currentRoomId");
-            const playerName = cc.sys.localStorage.getItem("playerName") || "玩家";
-            
-            const friendListPopup = this.invitePopup.getComponent(FriendListPopup);
-            if (friendListPopup) {
-                friendListPopup.show(roomId, playerName);
-            }
-        }
+        const roomId = sys.localStorage.getItem("currentRoomId");
+        const playerName = sys.localStorage.getItem("playerName") || "玩家";
+        InviteManager.instance.inviteFriend(roomId, playerName);
     }
 
     // 接收到游戏开始信号
     private onGameStarted(data: any) {
         console.log("🚀 游戏正式开始！收到初始游戏数据:", data);
         // 保存最新的游戏状态，准备传给 Game 场景
-        cc.sys.localStorage.setItem("currentGameState", JSON.stringify(data.gameState || data));
+        sys.localStorage.setItem("currentGameState", JSON.stringify(data.gameState || data));
 
         // 我们下一步要建的 Game 场景
         // director.loadScene("Game");
