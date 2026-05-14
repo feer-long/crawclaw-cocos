@@ -1,5 +1,6 @@
 import { _decorator, Component, Label, Node, director, Color, profiler, assetManager } from 'cc';
 import { NetworkManager } from '../Network/NetworkManager';
+import { InviteManager } from '../WeChat/InviteManager';
 const { ccclass, property } = _decorator;
 
 @ccclass('RoomView')
@@ -20,6 +21,9 @@ export class RoomView extends Component {
 
     @property(Node)
     public btnStartGame: Node = null;
+
+    @property(Node)
+    public invitePopup: Node = null;
 
     private localPlayerId: number = -1;
     private isHost: boolean = false;
@@ -52,6 +56,9 @@ export class RoomView extends Component {
                 console.log("✅ 成功接入房间专属频道！现在可以发送准备指令了。");
             });
         }
+
+        // 初始化邀请功能
+        InviteManager.instance.init();
     }
 
     onDestroy() {
@@ -123,6 +130,15 @@ export class RoomView extends Component {
             ready: true,
             forceStart: true
         });
+    }
+
+    public onEmptySlotClick(slotIndex: number): void {
+        const roomId = cc.sys.localStorage.getItem("currentRoomId");
+        const playerName = cc.sys.localStorage.getItem("playerName") || "玩家";
+
+        if (roomId) {
+            InviteManager.instance.inviteFriend(roomId, playerName);
+        }
     }
 
     // 接收到游戏开始信号
