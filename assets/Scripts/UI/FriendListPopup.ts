@@ -113,8 +113,25 @@ export class FriendListPopup extends Component {
     private onInviteFriend(friend: Friend): void {
         console.log('邀请好友:', friend.nickname);
         this.showStatus(`正在向 ${friend.nickname} 发送邀请...`);
+        
+        const onInviteSent = () => {
+            InviteManager.instance.eventTarget.off('inviteSent', onInviteSent);
+            InviteManager.instance.eventTarget.off('inviteFailed', onInviteFailed);
+            this.showInviteSuccess(friend.nickname);
+        };
+        
+        const onInviteFailed = () => {
+            InviteManager.instance.eventTarget.off('inviteSent', onInviteSent);
+            InviteManager.instance.eventTarget.off('inviteFailed', onInviteFailed);
+            this.showStatus('邀请发送失败，请重试');
+            setTimeout(() => {
+                this.hideStatus();
+            }, 2000);
+        };
+        
+        InviteManager.instance.eventTarget.on('inviteSent', onInviteSent, this);
+        InviteManager.instance.eventTarget.on('inviteFailed', onInviteFailed, this);
         InviteManager.instance.inviteFriend(this.roomId, this.playerName);
-        this.showInviteSuccess(friend.nickname);
     }
     
     private showInviteSuccess(friendName: string): void {

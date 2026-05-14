@@ -1,6 +1,7 @@
 import { _decorator, Component, Label, Node, director, Color, profiler, assetManager } from 'cc';
 import { NetworkManager } from '../Network/NetworkManager';
 import { InviteManager } from '../WeChat/InviteManager';
+import { FriendListPopup } from './FriendListPopup';
 const { ccclass, property } = _decorator;
 
 @ccclass('RoomView')
@@ -133,11 +134,14 @@ export class RoomView extends Component {
     }
 
     public onEmptySlotClick(slotIndex: number): void {
-        const roomId = cc.sys.localStorage.getItem("currentRoomId");
-        const playerName = cc.sys.localStorage.getItem("playerName") || "玩家";
-
-        if (roomId) {
-            InviteManager.instance.inviteFriend(roomId, playerName);
+        if (this.invitePopup) {
+            const roomId = cc.sys.localStorage.getItem("currentRoomId");
+            const playerName = cc.sys.localStorage.getItem("playerName") || "玩家";
+            
+            const friendListPopup = this.invitePopup.getComponent(FriendListPopup);
+            if (friendListPopup) {
+                friendListPopup.show(roomId, playerName);
+            }
         }
     }
 

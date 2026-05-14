@@ -16,9 +16,21 @@ export class FriendItem extends Component {
     
     private friend: Friend = null;
     private onInviteCallback: () => void = null;
+    private loadedTexture: Texture2D | null = null;
     
     onLoad() {
         this.inviteButton.on(Node.EventType.TOUCH_END, this.onInviteClick, this);
+    }
+    
+    onDestroy() {
+        this.releaseTexture();
+    }
+    
+    private releaseTexture(): void {
+        if (this.loadedTexture) {
+            assetManager.releaseAsset(this.loadedTexture);
+            this.loadedTexture = null;
+        }
     }
     
     public setFriendInfo(friend: Friend): void {
@@ -32,11 +44,14 @@ export class FriendItem extends Component {
             return;
         }
         
+        this.releaseTexture();
+        
         assetManager.loadRemote<Texture2D>(url, (err, texture) => {
             if (err || !texture) {
                 return;
             }
             
+            this.loadedTexture = texture;
             const spriteFrame = new SpriteFrame();
             spriteFrame.texture = texture;
             this.avatarSprite.spriteFrame = spriteFrame;
