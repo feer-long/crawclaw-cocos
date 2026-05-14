@@ -65,6 +65,7 @@ export class RoomView extends Component {
     onDestroy() {
         NetworkManager.instance.eventTarget.off('roomStateUpdate', this.onRoomStateUpdate, this);
         NetworkManager.instance.eventTarget.off('gameStarted', this.onGameStarted, this);
+        InviteManager.instance.destroy();
     }
 
     // 每次有玩家进出、准备时，服务器都会发这个事件

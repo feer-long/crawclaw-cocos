@@ -1,4 +1,4 @@
-import { EventTarget } from 'cc';
+import { EventTarget, sys } from 'cc';
 import { WeChatAdapter } from './WeChatAdapter';
 import { NetworkManager } from '../Network/NetworkManager';
 
@@ -7,6 +7,7 @@ export class InviteManager {
     public eventTarget: EventTarget = new EventTarget();
     private _onShowCallback: ((res: any) => void) | null = null;
     private _userId: string | null = null;
+    private _initialized = false;
 
     public static get instance(): InviteManager {
         if (!this._instance) {
@@ -16,6 +17,9 @@ export class InviteManager {
     }
 
     public init(): void {
+        if (this._initialized) return;
+        this._initialized = true;
+
         if (WeChatAdapter.instance.isWeChatEnvironment()) {
             this._onShowCallback = (res: any) => {
                 if (res.query && res.query.roomId) {
@@ -63,7 +67,11 @@ export class InviteManager {
 
         const resolvedName = playerName || '微信好友';
         if (!this._userId) {
-            this._userId = 'wx_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9);
+            this._userId = sys.localStorage.getItem('wx_user_id');
+            if (!this._userId) {
+                this._userId = 'wx_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9);
+                sys.localStorage.setItem('wx_user_id', this._userId);
+            }
         }
 
         NetworkManager.instance.send('clientRoomAction', 'inviteJoin', {

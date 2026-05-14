@@ -51,6 +51,11 @@ export class FriendItem extends Component {
                 return;
             }
             
+            if (!this.isValid) {
+                assetManager.releaseAsset(texture);
+                return;
+            }
+            
             this.loadedTexture = texture;
             const spriteFrame = new SpriteFrame();
             spriteFrame.texture = texture;
