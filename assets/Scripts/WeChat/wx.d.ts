@@ -42,6 +42,12 @@ interface WxMessage {
     [key: string]: any;
 }
 
+interface WxOnShowCallbackResult {
+    scene: number;
+    query: { [key: string]: string };
+    shareTicket?: string;
+}
+
 interface Wx {
     showShareMenu(options: WxShowShareMenuOptions): void;
     onShareAppMessage(callback: () => { title: string; imageUrl: string }): void;
@@ -49,6 +55,7 @@ interface Wx {
     onMessage(callback: (data: WxMessage) => void): void;
     getUserInfo(options: WxGetUserInfoOptions): void;
     shareAppMessage(options: WxShareAppMessageOptions): void;
+    onShow(callback: (res: WxOnShowCallbackResult) => void): void;
 }
 
 declare const wx: Wx | undefined;
