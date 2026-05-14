@@ -66,7 +66,7 @@ export class InviteManager {
             this._userId = 'wx_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9);
         }
 
-        NetworkManager.instance.send('clientRoomAction', 'joinRoom', {
+        NetworkManager.instance.send('clientRoomAction', 'inviteJoin', {
             roomId: roomId,
             playerName: resolvedName,
             userId: this._userId
