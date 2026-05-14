@@ -56,6 +56,7 @@ interface Wx {
     getUserInfo(options: WxGetUserInfoOptions): void;
     shareAppMessage(options: WxShareAppMessageOptions): void;
     onShow(callback: (res: WxOnShowCallbackResult) => void): void;
+    offShow(callback: (res: WxOnShowCallbackResult) => void): void;
 }
 
 declare const wx: Wx | undefined;

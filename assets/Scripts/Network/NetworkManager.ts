@@ -116,6 +116,10 @@ export class NetworkManager {
         }
     }
 
+    public isConnected(): boolean {
+        return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
+    }
+
     public disconnect() {
         if (this.ws) {
             this.ws.close();
