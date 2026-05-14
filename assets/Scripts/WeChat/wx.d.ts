@@ -31,11 +31,22 @@ interface WxOpenDataContext {
     postMessage(message: any): void;
 }
 
+interface WxMessage {
+    type: string;
+    friends?: Array<{
+        openId: string;
+        nickname: string;
+        avatarUrl: string;
+        isOnline: boolean;
+    }>;
+    [key: string]: any;
+}
+
 interface Wx {
     showShareMenu(options: WxShowShareMenuOptions): void;
     onShareAppMessage(callback: () => { title: string; imageUrl: string }): void;
     getOpenDataContext(): WxOpenDataContext;
-    onMessage(callback: (data: any) => void): void;
+    onMessage(callback: (data: WxMessage) => void): void;
     getUserInfo(options: WxGetUserInfoOptions): void;
     shareAppMessage(options: WxShareAppMessageOptions): void;
 }

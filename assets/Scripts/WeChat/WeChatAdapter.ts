@@ -21,8 +21,10 @@ export class WeChatAdapter {
         return this._instance;
     }
 
-    private _friendListCallbacks: Array<(friends: Friend[]) => void> = [];
+    private _friendListCallbacks: Array<{ callback: (friends: Friend[]) => void; timer: ReturnType<typeof setTimeout> }> = [];
     private _shareCallbackHandler: ((query: { roomId?: string; inviter?: string }) => void) | null = null;
+
+    private static readonly CALLBACK_TIMEOUT_MS = 10000;
 
     public isWeChatEnvironment(): boolean {
         return typeof wx !== 'undefined';
@@ -54,11 +56,18 @@ export class WeChatAdapter {
     private initMessageListener(): void {
         wx.onMessage((data) => {
             if (data.type === 'friendList') {
-                const friends = data.friends || [];
-                this._friendListCallbacks.forEach((cb) => cb(friends));
-                this._friendListCallbacks = [];
+                const friends: Friend[] = Array.isArray(data.friends) ? data.friends : [];
+                this._fireFriendListCallbacks(friends);
             }
         });
+    }
+
+    private _fireFriendListCallbacks(friends: Friend[]): void {
+        for (const entry of this._friendListCallbacks) {
+            clearTimeout(entry.timer);
+            entry.callback(friends);
+        }
+        this._friendListCallbacks = [];
     }
 
     public getFriendList(callback: (friends: Friend[]) => void): void {
@@ -68,7 +77,13 @@ export class WeChatAdapter {
             return;
         }
 
-        this._friendListCallbacks.push(callback);
+        const timer = setTimeout(() => {
+            console.warn('获取好友列表超时，回调已清理');
+            this._friendListCallbacks = this._friendListCallbacks.filter((e) => e.timer !== timer);
+            callback([]);
+        }, WeChatAdapter.CALLBACK_TIMEOUT_MS);
+
+        this._friendListCallbacks.push({ callback, timer });
 
         wx.getOpenDataContext().postMessage({
             type: 'getFriendList'
