@@ -63,6 +63,10 @@ export class ActionSlotView extends Component {
         // ==========================================
         // 2. 五大区域定制化排版与数值逻辑
         // ==========================================
+        if (this.actionCountLabel && countStr !== "") {
+            this.actionCountLabel.string = countStr;
+        }
+
         switch (areaId) {
             case 'shrimp_catching':
                 if (slotIndex === 0 && this.firstFlagSprite) this.firstFlagSprite.active = true;
@@ -78,21 +82,16 @@ export class ActionSlotView extends Component {
                 break;
 
             case 'tribute':
-                if (this.actionCountLabel) this.actionCountLabel.node.active = false;
-                if (this.actionTimesLabel) this.actionTimesLabel.node.active = false;
                 if (this.rewardSprite) this.rewardSprite.node.active = false;
-
                 if (slotIndex < 3) {
-                    if (this.labelReward) this.labelReward.string = "顺序";
-                    if (this.rewardLabel) {
-                        this.rewardLabel.string = (slotIndex + 1).toString();
-                        this.rewardLabel.node.active = true; // 强制数字展示，不受 ×1 隐藏逻辑影响
+                    if (this.actionTimesLabel) this.actionTimesLabel.string = "顺序";
+                    if (this.actionCountLabel) {
+                        this.actionCountLabel.string = (slotIndex + 1).toString();
                     }
                 } else {
-                    if (this.labelReward) this.labelReward.string = "挑战";
-                    if (this.rewardLabel) {
-                        this.rewardLabel.string = (slotIndex - 2).toString();
-                        this.rewardLabel.node.active = true;
+                    if (this.actionTimesLabel) this.actionTimesLabel.string = "挑战";
+                    if (this.actionCountLabel) {
+                        this.actionCountLabel.string = (slotIndex - 2).toString();
                     }
                 }
                 break;
@@ -140,10 +139,6 @@ export class ActionSlotView extends Component {
                 if (widget) widget.enabled = false;
                 const pos = this.actionTimesLabel.node.position;
                 this.actionTimesLabel.node.setPosition(new Vec3(pos.x, -83, pos.z));
-            }
-        } else {
-            if (this.actionCountLabel && countStr !== "") {
-                this.actionCountLabel.string = countStr;
             }
         }
 
