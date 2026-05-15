@@ -176,7 +176,11 @@ export class WeChatAdapter {
                 this._authButton = null;
                 button.destroy();
 
-                if (res && res.userInfo) {
+                if (res.errMsg && res.errMsg.indexOf('no privacy api permission') > -1) {
+                    console.error('[WeChatAdapter] 需要隐私授权，请在微信管理后台配置隐私协议');
+                }
+
+                if (res.userInfo) {
                     callback({
                         openId: res.userInfo.openId,
                         nickname: res.userInfo.nickName,

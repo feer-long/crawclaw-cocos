@@ -69,7 +69,7 @@ interface Wx {
 
 interface WxUserInfoButton {
     destroy(): void;
-    onTap(callback: (res: { userInfo: WxUserInfo | null }) => void): void;
+    onTap(callback: (res: { userInfo?: WxUserInfo; errMsg?: string; err_code?: string }) => void): void;
 }
 
 interface WxCreateUserInfoButtonOptions {
