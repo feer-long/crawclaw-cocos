@@ -25,12 +25,20 @@ export class LobbyView extends Component {
         NetworkManager.instance.eventTarget.off('error', this.onError, this);
     }
 
+    private getUserId(): string {
+        let userId = cc.sys.localStorage.getItem("userId");
+        if (!userId) {
+            userId = "user_" + Date.now().toString(36) + "_" + Math.random().toString(36).substr(2, 9);
+            cc.sys.localStorage.setItem("userId", userId);
+        }
+        return userId;
+    }
+
     public onBtnCreateRoomClicked() {
         this.statusLabel.string = "正在向服务器请求创建房间...";
         const playerName = cc.sys.localStorage.getItem("playerName") || "未知玩家";
-        const userId = "user_" + Math.random().toString(36).substr(2, 9);
+        const userId = this.getUserId();
 
-        // 【修改点】：传入 eventName 和 actionType (对齐 ClientEvents 和 ClientRoomActionTypes)
         NetworkManager.instance.send('clientRoomAction', 'createRoom', {
             playerName: playerName,
             userId: userId,
@@ -47,9 +55,8 @@ export class LobbyView extends Component {
 
         this.statusLabel.string = `正在加入房间 ${roomId}...`;
         const playerName = cc.sys.localStorage.getItem("playerName") || "未知玩家";
-        const userId = "user_" + Math.random().toString(36).substr(2, 9);
+        const userId = this.getUserId();
 
-        // 【修改点】：传入 eventName 和 actionType
         NetworkManager.instance.send('clientRoomAction', 'joinRoom', {
             roomId: roomId,
             playerName: playerName,

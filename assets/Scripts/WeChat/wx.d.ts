@@ -48,6 +48,12 @@ interface WxOnShowCallbackResult {
     shareTicket?: string;
 }
 
+interface WxSystemInfo {
+    screenWidth: number;
+    screenHeight: number;
+    pixelRatio: number;
+}
+
 interface Wx {
     showShareMenu(options: WxShowShareMenuOptions): void;
     onShareAppMessage(callback: () => { title: string; imageUrl: string }): void;
@@ -57,6 +63,33 @@ interface Wx {
     shareAppMessage(options: WxShareAppMessageOptions): void;
     onShow(callback: (res: WxOnShowCallbackResult) => void): void;
     offShow(callback: (res: WxOnShowCallbackResult) => void): void;
+    createUserInfoButton(options: WxCreateUserInfoButtonOptions): WxUserInfoButton;
+    getSystemInfoSync(): WxSystemInfo;
+}
+
+interface WxUserInfoButton {
+    destroy(): void;
+    onTap(callback: (res: { userInfo: WxUserInfo | null }) => void): void;
+}
+
+interface WxCreateUserInfoButtonOptions {
+    type: 'text' | 'image';
+    text?: string;
+    image?: string;
+    style: {
+        left: number;
+        top: number;
+        width: number;
+        height: number;
+        backgroundColor?: string;
+        borderColor?: string;
+        borderWidth?: number;
+        borderRadius?: number;
+        color?: string;
+        textAlign?: 'left' | 'center' | 'right';
+        fontSize?: number;
+        lineHeight?: number;
+    };
 }
 
 declare const wx: Wx | undefined;

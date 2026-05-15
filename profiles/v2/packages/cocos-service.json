@@ -7,20 +7,162 @@
         "services": []
       },
       "wechatgame": {
-        "configID": "a368cb",
-        "services": []
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
       }
     },
     "taskOptionsMap": {
       "1776255415755": {
         "configID": "a368cb",
         "services": []
+      },
+      "1778809027498": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778809793386": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778811334798": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778812218447": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778812531171": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778812931663": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778814679224": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778815045711": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778816241442": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778816999198": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778818941316": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778819143150": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778819285571": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778819415247": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778819577783": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778819665689": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778819799560": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778819962102": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778821382574": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778821455803": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778822392656": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778822939294": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778832659764": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778834215262": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778834836883": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778852752504": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778853141257": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
+      },
+      "1778856703087": {
+        "configID": "07aef2",
+        "services": [],
+        "__version__": "3.0.9"
       }
     },
     "__version__": "1.3.9"
   },
   "builder-options": {
-    "configID": "a368cb",
-    "services": []
+    "configID": "07aef2",
+    "services": [],
+    "__version__": "3.0.9"
   }
 }
