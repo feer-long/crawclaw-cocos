@@ -54,6 +54,18 @@ interface WxSystemInfo {
     pixelRatio: number;
 }
 
+interface WxGetSettingCallbackResult {
+    authSetting: {
+        'scope.userInfo'?: boolean;
+        [key: string]: boolean | undefined;
+    };
+}
+
+interface WxGetSettingOptions {
+    success?: (res: WxGetSettingCallbackResult) => void;
+    fail?: (err: any) => void;
+}
+
 interface Wx {
     showShareMenu(options: WxShowShareMenuOptions): void;
     onShareAppMessage(callback: () => { title: string; imageUrl: string }): void;
@@ -65,6 +77,7 @@ interface Wx {
     offShow(callback: (res: WxOnShowCallbackResult) => void): void;
     createUserInfoButton(options: WxCreateUserInfoButtonOptions): WxUserInfoButton;
     getSystemInfoSync(): WxSystemInfo;
+    getSetting(options: WxGetSettingOptions): void;
 }
 
 interface WxUserInfoButton {

@@ -140,6 +140,40 @@ export class WeChatAdapter {
 
     private _authButton: WxUserInfoButton | null = null;
 
+    public getUserInfoRecommended(
+        buttonPosition: { x: number; y: number; width: number; height: number },
+        callback: (userInfo: UserInfo | null) => void
+    ): void {
+        if (!this.isWeChatEnvironment()) {
+            callback(null);
+            return;
+        }
+
+        wx.getSetting({
+            success: (res) => {
+                if (res.authSetting['scope.userInfo'] === true) {
+                    wx.getUserInfo({
+                        success: (res) => {
+                            callback({
+                                openId: res.userInfo.openId,
+                                nickname: res.userInfo.nickName,
+                                avatarUrl: res.userInfo.avatarUrl
+                            });
+                        },
+                        fail: () => {
+                            callback(null);
+                        }
+                    });
+                } else {
+                    this.getUserInfoWithButton(buttonPosition, callback);
+                }
+            },
+            fail: () => {
+                this.getUserInfoWithButton(buttonPosition, callback);
+            }
+        });
+    }
+
     public getUserInfoWithButton(
         buttonPosition: { x: number; y: number; width: number; height: number },
         callback: (userInfo: UserInfo | null) => void
@@ -151,27 +185,23 @@ export class WeChatAdapter {
         }
 
         try {
-            console.log(`[WeChatAdapter] 创建授权按钮: x=${buttonPosition.x}, y=${buttonPosition.y}, w=${buttonPosition.width}, h=${buttonPosition.height}`);
             this._authButton = wx.createUserInfoButton({
                 type: 'text',
-                text: '微信一键登录',
+                text: ' ',
                 style: {
                     left: buttonPosition.x,
                     top: buttonPosition.y,
                     width: buttonPosition.width,
                     height: buttonPosition.height,
-                    backgroundColor: '#07C160',
-                    borderRadius: 22,
-                    color: '#FFFFFF',
+                    backgroundColor: 'rgba(214,214,214,0)',
+                    color: 'transparent',
                     textAlign: 'center',
-                    fontSize: 17,
+                    fontSize: 1,
                     lineHeight: buttonPosition.height
                 }
             });
-            console.log('[WeChatAdapter] 授权按钮创建成功');
 
             this._authButton.onTap((res) => {
-                console.log('[WeChatAdapter] 按钮被点击, res:', JSON.stringify(res));
                 const button = this._authButton;
                 this._authButton = null;
                 button.destroy();

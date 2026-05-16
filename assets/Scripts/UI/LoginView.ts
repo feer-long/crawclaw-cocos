@@ -10,7 +10,7 @@ export class LoginView extends Component {
     public nameInput: EditBox = null;
 
     @property(Node)
-    public wechatLoginButton: Node = null;
+    public wechatLoginPanel: Node = null;
 
     @property(Node)
     public manualLoginPanel: Node = null;
@@ -21,30 +21,40 @@ export class LoginView extends Component {
         profiler.hideStats();
         
         if (WeChatAdapter.instance.isWeChatEnvironment()) {
-            this.wechatLoginButton.active = true;
+            this.wechatLoginPanel.active = true;
             this.manualLoginPanel.active = false;
             this.setupWeChatLoginButton();
             console.log("微信环境：显示微信登录按钮");
         } else {
-            this.wechatLoginButton.active = false;
+            this.wechatLoginPanel.active = false;
             this.manualLoginPanel.active = true;
             console.log("登录场景加载完毕！等待玩家输入名字。");
         }
     }
 
     private setupWeChatLoginButton(): void {
-        if (!this.wechatLoginButton) {
-            console.warn('wechatLoginButton 未配置，降级为手动登录');
+        if (!this.wechatLoginPanel) {
+            console.warn('wechatLoginPanel 未配置，降级为手动登录');
             this.fallbackToManualLogin();
             return;
         }
 
-        const uiTransform = this.wechatLoginButton.getComponent(UITransform);
-        if (!uiTransform) {
-            console.warn('wechatLoginButton 缺少 UITransform 组件，降级为手动登录');
+        const loginBtn = this.wechatLoginPanel.getChildByName('LoginButton');
+        if (!loginBtn) {
+            console.warn('wechatLoginPanel 缺少 LoginButton 子节点，降级为手动登录');
             this.fallbackToManualLogin();
             return;
         }
+
+        const uiTransform = loginBtn.getComponent(UITransform);
+        if (!uiTransform) {
+            console.warn('LoginButton 缺少 UITransform 组件，降级为手动登录');
+            this.fallbackToManualLogin();
+            return;
+        }
+
+        const BUTTON_W = uiTransform.width;
+        const BUTTON_H = uiTransform.height;
 
         const canvasSize = screen.windowSize;
         const designWidth = 750;
@@ -58,24 +68,20 @@ export class LoginView extends Component {
         }
         const logicalWidth = canvasSize.width / dpr;
         const logicalHeight = canvasSize.height / dpr;
-        const scaleX = logicalWidth / designWidth;
-        const scaleY = logicalHeight / designHeight;
+        const uniformScale = Math.min(logicalWidth / designWidth, logicalHeight / designHeight);
+        const offsetX = (logicalWidth - designWidth * uniformScale) / 2;
+        const offsetY = (logicalHeight - designHeight * uniformScale) / 2;
 
-        const localPos = this.wechatLoginButton.position;
-        const screenX = (localPos.x + designWidth / 2) * scaleX;
+        const localPos = loginBtn.position;
 
-        const BUTTON_W = 280;
-        const BUTTON_H = 44;
         const buttonRect = {
-            x: screenX - BUTTON_W / 2,
-            y: (designHeight / 2 - localPos.y) * scaleY - BUTTON_H / 2,
-            width: BUTTON_W,
-            height: BUTTON_H
+            x: (localPos.x + designWidth / 2 - BUTTON_W / 2) * uniformScale + offsetX,
+            y: (designHeight / 2 - localPos.y - BUTTON_H / 2) * uniformScale + offsetY,
+            width: BUTTON_W * uniformScale,
+            height: BUTTON_H * uniformScale
         };
 
-        console.log(`微信按钮: DPR=${dpr}, logical=${logicalWidth}x${logicalHeight}, pos=${buttonRect.x.toFixed(0)},${buttonRect.y.toFixed(0)} ${BUTTON_W}x${BUTTON_H}`);
-
-        WeChatAdapter.instance.getUserInfoWithButton(buttonRect, (userInfo) => {
+        WeChatAdapter.instance.getUserInfoRecommended(buttonRect, (userInfo) => {
             if (userInfo && userInfo.nickname) {
                 console.log(`获取到微信昵称: ${userInfo.nickname}`);
                 if (userInfo.openId) {
@@ -129,8 +135,8 @@ export class LoginView extends Component {
     }
 
     private fallbackToManualLogin(): void {
-        if (this.wechatLoginButton) {
-            this.wechatLoginButton.active = false;
+        if (this.wechatLoginPanel) {
+            this.wechatLoginPanel.active = false;
         }
         if (this.manualLoginPanel) {
             this.manualLoginPanel.active = true;
