@@ -22,6 +22,9 @@ export class RoomView extends Component {
     @property(Node)
     public btnStartGame: Node = null;
 
+    @property([Node])
+    public inviteCircles: Node[] = [];
+
     private localPlayerId: number = -1;
     private isHost: boolean = false;
     private isReady: boolean = false;
@@ -45,7 +48,7 @@ export class RoomView extends Component {
 
         // 【关键修复：断开大厅，连接房间专属 WebSocket】
         if (roomId && pIdStr) {
-            const roomWsUrl = `ws://localhost:3100/ws/${roomId}/${pIdStr}`;
+            const roomWsUrl = `ws://192.168.1.102:3100/ws/${roomId}/${pIdStr}`;
             console.log("正在切换到房间专属通信通道...", roomWsUrl);
 
             // NetworkManager 内部会自动 close 掉旧的大厅连接，建立新连接
@@ -96,13 +99,19 @@ export class RoomView extends Component {
                 this.playerNames[i].string = nameStr;
                 this.playerReadyStatus[i].string = p.ready ? "已准备" : "未准备";
                 this.playerReadyStatus[i].color = p.ready ? new Color(0, 255, 0) : new Color(255, 0, 0);
+                if (this.inviteCircles[i]) this.inviteCircles[i].active = false;
                 const btn = this.playerReadyStatus[i].getComponent(Button);
                 if (btn) btn.interactable = false;
             } else {
-                this.playerNames[i].string = "等待加入...";
-                this.playerReadyStatus[i].string = "邀请好友";
+                this.playerNames[i].string = "";
+                this.playerReadyStatus[i].string = "";
+                if (i > 0) {
+                    if (this.inviteCircles[i]) this.inviteCircles[i].active = true;
+                } else {
+                    if (this.inviteCircles[i]) this.inviteCircles[i].active = false;
+                }
                 const btn = this.playerReadyStatus[i].getComponent(Button);
-                if (btn) btn.interactable = true;
+                if (btn) btn.interactable = i > 0;
             }
         }
 
