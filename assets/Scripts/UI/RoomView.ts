@@ -48,7 +48,7 @@ export class RoomView extends Component {
 
         // 【关键修复：断开大厅，连接房间专属 WebSocket】
         if (roomId && pIdStr) {
-            const roomWsUrl = `ws://192.168.1.102:3100/ws/${roomId}/${pIdStr}`;
+            const roomWsUrl = `ws://localhost:3100/ws/${roomId}/${pIdStr}`;
             console.log("正在切换到房间专属通信通道...", roomWsUrl);
 
             // NetworkManager 内部会自动 close 掉旧的大厅连接，建立新连接
