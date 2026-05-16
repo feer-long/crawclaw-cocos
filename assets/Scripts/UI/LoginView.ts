@@ -10,7 +10,7 @@ export class LoginView extends Component {
 
     // 假设你在本地运行 Python 服务器，端口是 3100
     // 根据你的 server/main.py，大厅的路由是 /ws/lobby
-    private serverUrl: string = "ws://localhost:3100/ws/lobby";
+    private serverUrl: string = "wss://crawclaw-257976-7-1318258869.sh.run.tcloudbase.com/ws/lobby";
 
     start() {
         profiler.hideStats();

@@ -12,7 +12,7 @@
       "platform": "wechatgame",
       "mangleProperties": true,
       "useBuiltinServer": false,
-      "server": "http://127.0.0.1:8080/",
+      "server": "https://crawclaw-1342985014.cos.ap-guangzhou.myqcloud.com/",
       "scenes": [
         {
           "url": "db://assets/remote_assets/Scenes/Game.scene",
