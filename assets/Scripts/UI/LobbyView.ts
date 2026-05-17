@@ -13,15 +13,18 @@ export class LobbyView extends Component {
 
     onLoad() {
         profiler.hideStats();
+        NetworkManager.instance.ensureLobbyConnection();
         // 【修改点】：全部对齐 events.py 的 ServerRoomActionTypes
         NetworkManager.instance.eventTarget.on('roomCreated', this.onRoomCreated, this);
         NetworkManager.instance.eventTarget.on('playerJoined', this.onRoomJoined, this);
+        NetworkManager.instance.eventTarget.on('playerReconnected', this.onRoomJoined, this);
         NetworkManager.instance.eventTarget.on('error', this.onError, this);
     }
 
     onDestroy() {
         NetworkManager.instance.eventTarget.off('roomCreated', this.onRoomCreated, this);
         NetworkManager.instance.eventTarget.off('playerJoined', this.onRoomJoined, this);
+        NetworkManager.instance.eventTarget.off('playerReconnected', this.onRoomJoined, this);
         NetworkManager.instance.eventTarget.off('error', this.onError, this);
     }
 

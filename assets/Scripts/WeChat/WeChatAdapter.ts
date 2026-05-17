@@ -46,7 +46,7 @@ export class WeChatAdapter {
         wx.onShareAppMessage(() => {
             return {
                 title: '龙争虾斗 - 邀请你加入游戏',
-                imageUrl: 'share.png'
+                imageUrl: 'https://crawclaw-1312271570.cos.ap-shanghai.myqcloud.com/logo.png'
             };
         });
     }
@@ -126,7 +126,7 @@ export class WeChatAdapter {
 
         wx.shareAppMessage({
             title: `${playerName} 邀请你加入游戏`,
-            imageUrl: 'invite_card.png',
+            imageUrl: 'https://crawclaw-1312271570.cos.ap-shanghai.myqcloud.com/logo.png',
             query: `roomId=${encodedRoomId}&playerName=${encodedPlayerName}`,
             success: () => {
                 callback(true);
