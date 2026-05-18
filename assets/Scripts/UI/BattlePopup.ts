@@ -291,7 +291,7 @@ export class BattlePopup extends Component {
 
     private setDiceImage(diceNode: Sprite, diceType: number) {
         // 注意路径：这里写的是相对于 remote_assets 文件夹的内部路径
-        const imagePath = `/settlement/tribute/dice_d${diceType}/spriteFrame`;
+        const imagePath = `Images/settlement/tribute/dice_d${diceType}/spriteFrame`;
 
         // 1. 先加载名为 remote_assets 的远程 Bundle
         assetManager.loadBundle('remote_assets', (err, bundle) => {
