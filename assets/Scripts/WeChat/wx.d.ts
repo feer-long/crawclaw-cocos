@@ -4,7 +4,6 @@
  */
 
 interface WxUserInfo {
-    openId: string;
     nickName: string;
     avatarUrl: string;
 }
@@ -66,6 +65,25 @@ interface WxGetSettingOptions {
     fail?: (err: any) => void;
 }
 
+interface WxLoginResult {
+    code: string;
+    errMsg: string;
+}
+
+interface WxLoginOptions {
+    success?: (res: WxLoginResult) => void;
+    fail?: (err: any) => void;
+}
+
+interface WxRequestOptions {
+    url: string;
+    method?: string;
+    data?: any;
+    header?: { [key: string]: string };
+    success?: (res: { data: any; statusCode: number }) => void;
+    fail?: (err: any) => void;
+}
+
 interface Wx {
     showShareMenu(options: WxShowShareMenuOptions): void;
     onShareAppMessage(callback: () => { title: string; imageUrl: string }): void;
@@ -78,6 +96,8 @@ interface Wx {
     createUserInfoButton(options: WxCreateUserInfoButtonOptions): WxUserInfoButton;
     getSystemInfoSync(): WxSystemInfo;
     getSetting(options: WxGetSettingOptions): void;
+    login(options: WxLoginOptions): void;
+    request(options: WxRequestOptions): void;
 }
 
 interface WxUserInfoButton {

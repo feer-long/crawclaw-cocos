@@ -1,6 +1,7 @@
 import { _decorator, Component, Node, EditBox, director, profiler, assetManager, UITransform, screen } from 'cc';
 import { NetworkManager } from '../Network/NetworkManager';
 import { WeChatAdapter } from '../WeChat/WeChatAdapter';
+import { Config } from '../Config';
 const { ccclass, property } = _decorator;
 
 @ccclass('LoginView')
@@ -14,8 +15,6 @@ export class LoginView extends Component {
 
     @property(Node)
     public manualLoginPanel: Node = null;
-
-    private serverUrl: string = "wss://crawclaw-257976-7-1318258869.sh.run.tcloudbase.com/ws/lobby";
 
     start() {
         profiler.hideStats();
@@ -83,11 +82,14 @@ export class LoginView extends Component {
 
         WeChatAdapter.instance.getUserInfoRecommended(buttonRect, (userInfo) => {
             if (userInfo && userInfo.nickname) {
-                console.log(`获取到微信昵称: ${userInfo.nickname}`);
-                if (userInfo.openId) {
-                    cc.sys.localStorage.setItem("userId", userInfo.openId);
-                }
-                this.loginWithNickname(userInfo.nickname);
+                WeChatAdapter.instance.getOpenId((openId) => {
+                    if (openId) {
+                        cc.sys.localStorage.setItem("userId", openId);
+                    } else {
+                        console.warn('获取微信ID失败，将使用随机用户ID');
+                    }
+                    this.loginWithNickname(userInfo.nickname);
+                });
             } else {
                 console.warn('微信授权失败或用户取消，降级为手动登录');
                 this.fallbackToManualLogin();
@@ -100,7 +102,7 @@ export class LoginView extends Component {
         console.log(`玩家 ${nickname} 准备连接大厅...`);
 
         NetworkManager.instance.connect(
-            this.serverUrl,
+            `wss://${Config.API_HOST}/ws/lobby`,
             () => {
                 console.log("连接大厅成功，准备切换场景...");
                 console.log("准备下载远程资源并切换到大厅场景...");
@@ -163,7 +165,7 @@ export class LoginView extends Component {
         console.log(`玩家 ${playerName} 准备连接大厅...`);
 
         NetworkManager.instance.connect(
-            this.serverUrl,
+            `wss://${Config.API_HOST}/ws/lobby`,
             () => {
                 console.log("连接大厅成功，准备切换场景...");
                 console.log("准备下载远程资源并切换到大厅场景...");
