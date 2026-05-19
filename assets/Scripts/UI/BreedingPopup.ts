@@ -38,6 +38,7 @@ export class BreedingPopup extends Component {
 
     private lobsterBtns: Node[] = [];
     private titleBtns: Node[] = [];
+    private filteredTitles: any[] = [];
 
     // 新增：判断是否全满级
     private hasUpgradeable: boolean = false;
@@ -102,8 +103,11 @@ export class BreedingPopup extends Component {
         const gameState = stateStr ? JSON.parse(stateStr) : {};
         const availableTitles = gameState.gameTitleCards || [];
 
-        for (let i = 0; i < availableTitles.length; i++) {
-            const titleCard = availableTitles[i];
+        const earnedTitleIds = new Set((this.player.titleCards || []).map((t: any) => t.id));
+        this.filteredTitles = availableTitles.filter((t: any) => !earnedTitleIds.has(t.id));
+
+        for (let i = 0; i < this.filteredTitles.length; i++) {
+            const titleCard = this.filteredTitles[i];
             const btnNode = instantiate(this.titleBtnTemplate);
             btnNode.active = true;
             this.titleContainer.addChild(btnNode);
@@ -210,12 +214,10 @@ export class BreedingPopup extends Component {
             this.btnRewardDe.getComponent(Sprite).color = (this.royalReward === 'de') ? new Color(100, 200, 255) : new Color(220, 220, 220);
             this.btnRewardWang.getComponent(Sprite).color = (this.royalReward === 'wang') ? new Color(100, 200, 255) : new Color(220, 220, 220);
 
-            const stateStr = cc.sys.localStorage.getItem('currentGameState');
-            const titles = stateStr ? JSON.parse(stateStr).gameTitleCards || [] : [];
-            const hasTitles = titles.length > 0;
+            const hasTitles = this.filteredTitles.length > 0;
 
             this.titleBtns.forEach((btn, idx) => {
-                const tId = titles[idx]?.id;
+                const tId = this.filteredTitles[idx]?.id;
                 btn.getComponent(Sprite).color = (tId === this.selectedTitleId) ? new Color(255, 215, 0) : new Color(220, 220, 220);
             });
 
@@ -254,17 +256,6 @@ export class BreedingPopup extends Component {
 
         this.btnConfirm.interactable = false;
         this.btnSkip.interactable = false;
-
-        if (this.selectedTitleId) {
-            const stateStr = cc.sys.localStorage.getItem('currentGameState');
-            if (stateStr) {
-                const gameState = JSON.parse(stateStr);
-                if (gameState.gameTitleCards) {
-                    gameState.gameTitleCards = gameState.gameTitleCards.filter((t: any) => t.id !== this.selectedTitleId);
-                    cc.sys.localStorage.setItem('currentGameState', JSON.stringify(gameState));
-                }
-            }
-        }
 
         NetworkManager.instance.send('clientGameAction', 'areaAction', {
             payload: {

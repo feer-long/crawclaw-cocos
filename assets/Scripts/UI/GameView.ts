@@ -60,6 +60,24 @@ export class GameView extends Component {
         profiler.hideStats();
         this.isGameFinished = false;
 
+        // 创建 TopLayer 确保 PhaseLabel 永远置顶
+        const topLayer = new Node('TopLayer');
+        this.node.addChild(topLayer);
+        if (this.phaseLabel?.node) {
+            this.phaseLabel.node.parent = topLayer;
+        }
+        if (this.roundLabel?.node) {
+            this.roundLabel.node.parent = topLayer;
+        }
+        this.schedule(() => {
+            if (topLayer.isValid && topLayer.parent) {
+                const siblings = topLayer.parent.children;
+                if (siblings[siblings.length - 1] !== topLayer) {
+                    topLayer.setSiblingIndex(siblings.length - 1);
+                }
+            }
+        }, 0.1);
+
         NetworkManager.instance.eventTarget.on('gameStateUpdate', this.onStateChanged, this);
         NetworkManager.instance.eventTarget.on('playerResourceUpdate', this.onStateChanged, this);
         NetworkManager.instance.eventTarget.on('serverGameAction', this.onStateChanged, this);
@@ -129,7 +147,12 @@ export class GameView extends Component {
     }
 
     private onEndgameScoreChoiceRequired(data: any) {
-        const isForMe = (data.playerId == this.localPlayerId);
+        const gameState = NetworkManager.instance.getGameState();
+        const waitingList = gameState?.waitingForEndgameChoice || [];
+        const currentIndex = gameState?.endgameChoiceIndex ?? 0;
+        const currentPlayer = waitingList[currentIndex];
+        const isForMe = currentPlayer?.playerId == this.localPlayerId;
+
         if (isForMe) {
             if (this.currentPopupNode && this.currentPopupNode.isValid) {
                 this.currentPopupNode.destroy();
@@ -140,8 +163,12 @@ export class GameView extends Component {
                 const comp = this.currentPopupNode.getComponent('SettlementPopup');
                 if (comp) (comp as any).initEndgameChoice(data);
             }
-        } else {
-            this.phaseLabel.string = `🏁 终局阶段：等待玩家 ${data.playerName} 进行得分选择...`;
+        } else if (currentPlayer) {
+            this.phaseLabel.string = `🏁 终局阶段：等待玩家 ${currentPlayer.playerName} 进行得分选择...`;
+            if (this.currentPopupNode && this.currentPopupNode.isValid) {
+                this.currentPopupNode.destroy();
+                this.currentPopupNode = null;
+            }
         }
     }
 
@@ -356,13 +383,17 @@ if (this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !
 
                 if (currentPlayer && currentPlayer.playerId != this.localPlayerId) {
                     this.phaseLabel.string = `🏁 终局阶段：等待玩家 ${currentPlayer.playerName} 进行得分选择...`;
-                    // 如果已经打开了结算框但不是自己的轮次，关掉它
                     if (this.currentPopupNode && this.currentPopupNode.name === 'SettlementPopup') {
                         this.currentPopupNode.destroy();
                         this.currentPopupNode = null;
                     }
-                    // 显示排行榜（此时总分可能还没最终定格，但可以看）
                     this.onGameEnded({ gameState: gameState });
+                } else if (currentPlayer && currentPlayer.playerId == this.localPlayerId) {
+                    this.phaseLabel.string = `🏁 终局阶段：轮到你进行得分选择...`;
+                    if (this.currentPopupNode && this.currentPopupNode.isValid && this.currentPopupNode.name !== 'SettlementPopup') {
+                        this.currentPopupNode.destroy();
+                        this.currentPopupNode = null;
+                    }
                 }
                 return;
             }

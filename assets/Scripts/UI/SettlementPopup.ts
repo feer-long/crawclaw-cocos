@@ -88,8 +88,8 @@ export class SettlementPopup extends Component {
 
         if (this.loadingLabel?.node) this.loadingLabel.active = false;
 
-        const card = data.data.card;
-        const choices = data.data.choices || [];
+        const card = data.card;
+        const choices = data.choices || [];
         const resType = card.costResourceType === 'coins' ? '山海贝币' : '琅玕仙草';
 
         this.titleLabel.string = "🏁 终局得分选择";
@@ -108,6 +108,7 @@ export class SettlementPopup extends Component {
         choices.forEach((choice: any, idx: number) => {
             if (idx < btnList.length) {
                 const btn = btnList[idx];
+                if (!btn || !btn.isValid) return;
                 btn.active = true;
                 const label = btn.getComponentInChildren(Label);
                 if (label) {
@@ -115,8 +116,8 @@ export class SettlementPopup extends Component {
                 }
                 
                 // 重新绑定点击事件
-                btn.node.off(Node.EventType.TOUCH_END);
-                btn.node.on(Node.EventType.TOUCH_END, () => {
+                btn.off(Node.EventType.TOUCH_END);
+                btn.on(Node.EventType.TOUCH_END, () => {
                     this._sendEndgameChoice(idx);
                 }, this);
             }

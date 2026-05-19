@@ -99,6 +99,13 @@ export class MarketplacePopup extends Component {
             const label = node.getComponentInChildren(Label);
             if (label) label.string = this.formatOptionString(opt);
 
+            const affordable = this.canAfford(opt.cost);
+            const btn = node.getComponent(Button);
+            if (!affordable.ok) {
+                if (btn) btn.interactable = false;
+                node.getComponent(Sprite).color = new Color(150, 150, 150);
+            }
+
             node.on(Button.EventType.CLICK, () => {
                 this.selectedOptionIndex = i;
                 this.refreshUI();
@@ -120,6 +127,18 @@ export class MarketplacePopup extends Component {
         if (!rewStr) rewStr = "无";
 
         return `消耗 [ ${costStr} ]  ➡️  获得 [ ${rewStr} ]`;
+    }
+
+    private canAfford(cost: any): { ok: boolean; reason: string } {
+        if (!cost) return { ok: true, reason: "" };
+        for (const key in cost) {
+            const needed = cost[key];
+            const have = this.player[key] || 0;
+            if (have < needed) {
+                return { ok: false, reason: `${RES_NAMES[key] || key}不足(需${needed})` };
+            }
+        }
+        return { ok: true, reason: "" };
     }
 
     private refreshUI() {
@@ -156,14 +175,28 @@ export class MarketplacePopup extends Component {
                 if (this.selectedOptionIndex === -1) {
                     this.hintLabel.string = "👇 请在下方选择一个具体的执行方式";
                 } else {
-                    this.hintLabel.string = "✅ 确认执行此项操作吗？";
-                    canConfirm = true;
+                    const opt = options[this.selectedOptionIndex];
+                    const check = this.canAfford(opt.cost);
+                    if (check.ok) {
+                        this.hintLabel.string = "✅ 确认执行此项操作吗？";
+                        canConfirm = true;
+                    } else {
+                        this.hintLabel.string = `⚠️ ${check.reason}`;
+                        canConfirm = false;
+                    }
                 }
             } else {
                 // 自动执行的卡
                 this.optionPanel.active = false;
-                this.hintLabel.string = "✅ 确认执行此卡牌效果吗？";
-                canConfirm = true;
+                const opt = options[0] || {};
+                const check = this.canAfford(opt.cost);
+                if (check.ok) {
+                    this.hintLabel.string = "✅ 确认执行此卡牌效果吗？";
+                    canConfirm = true;
+                } else {
+                    this.hintLabel.string = `⚠️ ${check.reason}`;
+                    canConfirm = false;
+                }
             }
         }
 

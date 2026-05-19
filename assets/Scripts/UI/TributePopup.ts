@@ -537,8 +537,12 @@ export class TributePopup extends Component {
                     if (visibleItemCount === 0) {
                         this.hintLabel.string = "❌ 你的背包中没有符合该卡牌品级要求的祭品！";
                     } else if (this.selectedItemIds.length === this.reqLobsterCount) {
-                        this.hintLabel.string = `✅ 已选择 ${this.selectedCardIds.length} 张卡牌与 ${this.reqLobsterCount} 个祭品，点击确认！`;
-                        canConfirm = true;
+                        if (this.validateSelectedLobsters()) {
+                            this.hintLabel.string = `✅ 已选择 ${this.selectedCardIds.length} 张卡牌与 ${this.reqLobsterCount} 个祭品，点击确认！`;
+                            canConfirm = true;
+                        } else {
+                            this.hintLabel.string = "❌ 所选祭品种类不足以满足卡牌品级要求！";
+                        }
                     } else {
                         this.hintLabel.string = `👇 此卡牌需要 ${this.reqLobsterCount} 个祭品，请在下方选择 (已选: ${this.selectedItemIds.length}/${this.reqLobsterCount})`;
                     }
@@ -571,8 +575,59 @@ export class TributePopup extends Component {
     public onBtnBonusDeClicked() { this.bonusChoice = 'de'; this.refreshUI(); }
     public onBtnBonusWangClicked() { this.bonusChoice = 'wang'; this.refreshUI(); }
 
+    private validateSelectedLobsters(): boolean {
+        if (this.isNakedTribute || this.selectedCardIds.length === 0) return true;
+
+        const reqLobsters: { [grade: string]: number } = {};
+        for (const cid of this.selectedCardIds) {
+            const card = this.getCardById(cid);
+            if (card && card.requirements && card.requirements.lobsters) {
+                for (const grade in card.requirements.lobsters) {
+                    reqLobsters[grade] = (reqLobsters[grade] || 0) + card.requirements.lobsters[grade];
+                }
+            }
+        }
+        if (Object.keys(reqLobsters).length === 0) return true;
+
+        const selectedValues = this.selectedItemIds.map(id => {
+            const item = this.myInventory.find(i => i.id === id);
+            return item ? getGradeValue(item.data.grade) : 0;
+        }).filter(v => v >= 0);
+        selectedValues.sort((a, b) => a - b);
+
+        const reqValues: number[] = [];
+        for (const grade in reqLobsters) {
+            for (let i = 0; i < reqLobsters[grade]; i++) {
+                reqValues.push(getGradeValue(grade));
+            }
+        }
+        reqValues.sort((a, b) => b - a);
+
+        const usedIndices = new Set<number>();
+        for (const reqVal of reqValues) {
+            let matched = false;
+            for (let i = 0; i < selectedValues.length; i++) {
+                if (!usedIndices.has(i) && selectedValues[i] >= reqVal) {
+                    usedIndices.add(i);
+                    matched = true;
+                    break;
+                }
+            }
+            if (!matched) return false;
+        }
+        return true;
+    }
+
     public onBtnConfirmClicked() {
         this.btnConfirm.interactable = false;
+
+        if (!this.isNakedTribute) {
+            if (!this.validateSelectedLobsters()) {
+                this.hintLabel.string = "❌ 所选祭品种类不足以满足卡牌品级要求！";
+                this.btnConfirm.interactable = true;
+                return;
+            }
+        }
 
         let hasTitleBonus = false;
         for (const itemId of this.selectedItemIds) {
@@ -743,7 +798,7 @@ export class TributePopup extends Component {
                         choice.action = choice.grade;
                     }
                     console.log('🔄 重试上供选择:', { taskId: this.pendingChoiceTaskId, choice });
-                    NetworkManager.instance.send('clientGameAction', 'submitTributeChoice', {
+                    NetworkManager.instance.send('clientGameAction', 'areaAction', {
                         payload: {
                             actionType: 'submitTributeChoice',
                             payload: {
