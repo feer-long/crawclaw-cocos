@@ -105,7 +105,11 @@ export class LoginView extends Component {
             `wss://${Config.API_HOST}/ws/lobby`,
             () => {
                 console.log("连接大厅成功，准备切换场景...");
-                console.log("准备下载远程资源并切换到大厅场景...");
+                console.log("准备下载远程资源并切换到加载页...");
+
+                // ★ 挂路牌：告诉加载页，加载完后去大厅 (Lobby)
+                cc.sys.localStorage.setItem("TargetSceneName", "Lobby");
+
                 assetManager.loadBundle('remote_assets', (err, bundle) => {
                     if (err) {
                         console.error('加载远程资源包失败:', err);
@@ -168,7 +172,11 @@ export class LoginView extends Component {
             `wss://${Config.API_HOST}/ws/lobby`,
             () => {
                 console.log("连接大厅成功，准备切换场景...");
-                console.log("准备下载远程资源并切换到大厅场景...");
+                console.log("准备下载远程资源并切换到加载页...");
+
+                // ★ 挂路牌：告诉加载页，加载完后去大厅 (Lobby)
+                cc.sys.localStorage.setItem("TargetSceneName", "Lobby");
+
                 assetManager.loadBundle('remote_assets', (err, bundle) => {
                     if (err) {
                         console.error('加载远程资源包失败:', err);

@@ -342,21 +342,21 @@ export class RoomView extends Component {
         if (onConfirm) onConfirm();
     }
 
-    // 接收到游戏开始信号
+    // ★ 核心改动仅限于此：游戏开始后，挂好路牌，进入Loading场景拉取资源
     private onGameStarted(data: any) {
         console.log("🚀 游戏正式开始！收到初始游戏数据:", data);
-        // 保存最新的游戏状态，准备传给 Game 场景
         sys.localStorage.setItem("currentGameState", JSON.stringify(data.gameState || data));
 
-        // 我们下一步要建的 Game 场景
-        // director.loadScene("Game");
+        // 挂路牌：告诉 Loading 场景，这次要拉取的资源是 Game
+        sys.localStorage.setItem("TargetSceneName", "Game");
+
         assetManager.loadBundle('remote_assets', (err, bundle) => {
             if (err) {
                 console.error('加载远程包失败:', err);
                 return;
             }
-            bundle.loadScene('Game', (err, sceneAsset) => {
-                if (err) return console.error('加载游戏场景失败:', err);
+            bundle.loadScene('Loading', (err, sceneAsset) => {
+                if (err) return console.error('加载Loading场景失败:', err);
                 director.runScene(sceneAsset);
             });
         });

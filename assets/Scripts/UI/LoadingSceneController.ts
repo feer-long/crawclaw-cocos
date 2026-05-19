@@ -1,4 +1,4 @@
-import { _decorator, Component, ProgressBar, Animation, Node, director, assetManager, profiler } from 'cc';
+import { _decorator, Component, ProgressBar, Animation, Node, director, assetManager, profiler, sys } from 'cc';
 const { ccclass, property } = _decorator;
 
 @ccclass('LoadingSceneController')
@@ -22,7 +22,7 @@ export class LoadingSceneController extends Component {
     @property({ type: Animation, tooltip: '中间打坐灵螯的睁眼动画组件' })
     public clawOpenAnim: Animation | null = null;
 
-    @property({ tooltip: '加载完毕后要跳转的场景名字' })
+    @property({ tooltip: '加载完毕后要跳转的场景名字(默认备用)' })
     public targetSceneName: string = 'Lobby';
 
     private actualProgress: number = 0; // 真实的底层加载进度
@@ -30,7 +30,14 @@ export class LoadingSceneController extends Component {
     private hasReached100: boolean = false;
 
     onLoad() {
-        // 让节点自己的 Play On Load 去干活，这里不手动 play 了
+        // ★ 从本地缓存读取目的地路牌（Login进就是Lobby，Room进就是Game）
+        const dynamicTarget = sys.localStorage.getItem("TargetSceneName");
+        if (dynamicTarget) {
+            this.targetSceneName = dynamicTarget;
+            sys.localStorage.removeItem("TargetSceneName");
+            console.log(`[智能加载页] 本次目的地设定为: ${this.targetSceneName}`);
+        }
+
         if (this.progressBar) {
             this.progressBar.progress = 0;
         }
@@ -40,6 +47,7 @@ export class LoadingSceneController extends Component {
         profiler.hideStats();
         const bundle = assetManager.getBundle('remote_assets');
         if (bundle) {
+            // ★ 开始在后台静默拉取目标场景（Lobby 或 Game）的所有资源
             bundle.preloadScene(this.targetSceneName,
                 (finished, total) => {
                     if (total > 0) {
@@ -92,7 +100,6 @@ export class LoadingSceneController extends Component {
         if (!this.progressBar || !this.clawWalkerNode) return;
 
         const progressPercent = this.progressBar.progress;
-
         const startX = -this.crawlDistance / 2;
         const finalX = startX + (progressPercent * this.crawlDistance);
 
@@ -111,7 +118,7 @@ export class LoadingSceneController extends Component {
     private playClawOpenAnimation() {
         if (this.clawOpenAnim) {
             this.clawOpenAnim.play('claw_open');
-            // 【修改点2】：监听动画播放结束，结束后去执行 onAnimationFinished
+            // 睁眼动画播完，去等待 1.5 秒
             this.clawOpenAnim.once('finished', this.onAnimationFinished, this);
         } else {
             console.warn('没有配置睁眼动画，直接准备跳转');
@@ -129,9 +136,10 @@ export class LoadingSceneController extends Component {
     }
 
     private onLoadComplete() {
-        console.log(`准备进入 ${this.targetSceneName} 场景...`);
+        console.log(`资源拉取完毕，准备进入 ${this.targetSceneName} 场景...`);
         const bundle = assetManager.getBundle('remote_assets');
         if (bundle) {
+            // 因为前面已经 preload 过了，这一步瞬间就能切进去，完美无卡顿
             bundle.loadScene(this.targetSceneName, (err, sceneAsset) => {
                 if (err) {
                     console.error('切换目标场景失败:', err);
