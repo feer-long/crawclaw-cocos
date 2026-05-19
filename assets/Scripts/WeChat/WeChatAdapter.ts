@@ -1,3 +1,5 @@
+import { Config } from '../Config';
+
 export interface Friend {
     openId: string;
     nickname: string;
@@ -6,7 +8,6 @@ export interface Friend {
 }
 
 export interface UserInfo {
-    openId: string;
     nickname: string;
     avatarUrl: string;
 }
@@ -46,7 +47,7 @@ export class WeChatAdapter {
         wx.onShareAppMessage(() => {
             return {
                 title: '龙争虾斗 - 邀请你加入游戏',
-                imageUrl: 'https://crawclaw-1312271570.cos.ap-shanghai.myqcloud.com/logo.png'
+                imageUrl: `https://${Config.CDN_HOST}/logo.png`
             };
         });
     }
@@ -102,7 +103,6 @@ export class WeChatAdapter {
         wx.getUserInfo({
             success: (res) => {
                 callback({
-                    openId: res.userInfo.openId,
                     nickname: res.userInfo.nickName,
                     avatarUrl: res.userInfo.avatarUrl
                 });
@@ -126,7 +126,7 @@ export class WeChatAdapter {
 
         wx.shareAppMessage({
             title: `${playerName} 邀请你加入游戏`,
-            imageUrl: 'https://crawclaw-1312271570.cos.ap-shanghai.myqcloud.com/logo.png',
+            imageUrl: `https://${Config.CDN_HOST}/logo.png`,
             query: `roomId=${encodedRoomId}&playerName=${encodedPlayerName}`,
             success: () => {
                 callback(true);
@@ -155,7 +155,6 @@ export class WeChatAdapter {
                     wx.getUserInfo({
                         success: (res) => {
                             callback({
-                                openId: res.userInfo.openId,
                                 nickname: res.userInfo.nickName,
                                 avatarUrl: res.userInfo.avatarUrl
                             });
@@ -164,9 +163,9 @@ export class WeChatAdapter {
                             callback(null);
                         }
                     });
-                } else {
-                    this.getUserInfoWithButton(buttonPosition, callback);
-                }
+            } else {
+                this.getUserInfoWithButton(buttonPosition, callback);
+            }
             },
             fail: () => {
                 this.getUserInfoWithButton(buttonPosition, callback);
@@ -212,7 +211,6 @@ export class WeChatAdapter {
 
                 if (res.userInfo) {
                     callback({
-                        openId: res.userInfo.openId,
                         nickname: res.userInfo.nickName,
                         avatarUrl: res.userInfo.avatarUrl
                     });
@@ -225,6 +223,43 @@ export class WeChatAdapter {
             this._authButton = null;
             callback(null);
         }
+    }
+
+    private _apiBaseUrl: string = `https://${Config.API_HOST}`;
+
+    public getOpenId(callback: (openId: string | null) => void): void {
+        if (!this.isWeChatEnvironment()) {
+            callback(null);
+            return;
+        }
+
+        wx.login({
+            success: (res) => {
+                if (res.code) {
+                    wx.request({
+                        url: `${this._apiBaseUrl}/api/wechat/login`,
+                        method: 'POST',
+                        data: { code: res.code },
+                        header: { 'Content-Type': 'application/json' },
+                        success: (response) => {
+                            if (response.data && response.data.openid) {
+                                callback(response.data.openid);
+                            } else {
+                                callback(null);
+                            }
+                        },
+                        fail: () => {
+                            callback(null);
+                        }
+                    });
+                } else {
+                    callback(null);
+                }
+            },
+            fail: () => {
+                callback(null);
+            }
+        });
     }
 
     public destroyAuthButton(): void {
