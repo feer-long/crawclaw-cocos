@@ -110,9 +110,9 @@ export class LoginView extends Component {
                         this.showConnectionError();
                         return;
                     }
-                    bundle.loadScene('Lobby', (err, sceneAsset) => {
+                    bundle.loadScene('Loading', (err, sceneAsset) => {
                         if (err) {
-                            console.error('加载大厅场景失败:', err);
+                            console.error('加载Loading场景失败:', err);
                             this.showConnectionError();
                             return;
                         }
@@ -172,9 +172,9 @@ export class LoginView extends Component {
                         console.error('加载远程资源包失败:', err);
                         return;
                     }
-                    bundle.loadScene('Lobby', (err, sceneAsset) => {
+                    bundle.loadScene('Loading', (err, sceneAsset) => {
                         if (err) {
-                            console.error('加载大厅场景失败:', err);
+                            console.error('加载Loading场景失败:', err);
                             return;
                         }
                         director.runScene(sceneAsset);

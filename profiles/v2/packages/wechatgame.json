@@ -12,12 +12,8 @@
       "platform": "wechatgame",
       "mangleProperties": true,
       "useBuiltinServer": false,
-      "server": "https://crawclaw-1342985014.cos.ap-guangzhou.myqcloud.com/",
+      "server": "https://crawclaw-1312271570.cos.ap-shanghai.myqcloud.com/",
       "scenes": [
-        {
-          "url": "db://assets/Scenes/Login.scene",
-          "uuid": "25f0493d-334b-4c02-8883-7f58d69f38b1"
-        },
         {
           "url": "db://assets/remote_assets/Scenes/Game.scene",
           "uuid": "4339440d-9d98-423d-b9cf-bb8014931d45",
@@ -29,17 +25,15 @@
           "bundle": "db://assets/remote_assets"
         },
         {
+          "url": "db://assets/Scenes/Login.scene",
+          "uuid": "25f0493d-334b-4c02-8883-7f58d69f38b1"
+        },
+        {
           "url": "db://assets/remote_assets/Scenes/Room.scene",
           "uuid": "d9b190a9-c446-43a1-9741-c72bebf98ab6",
           "bundle": "db://assets/remote_assets"
         }
-      ],
-      "startSceneAssetBundle": false,
-      "mainBundleIsRemote": false,
-      "debug": false,
-      "md5Cache": true,
-      "bundleConfigs": [],
-      "skipCompressTexture": false
+      ]
     },
     "options": {
       "wechatgame": {
@@ -53,230 +47,6 @@
     },
     "taskOptionsMap": {
       "1776255415755": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778809027498": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778809793386": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778811334798": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778812218447": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778812531171": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778812931663": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778814679224": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778815045711": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778816241442": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778816999198": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778818941316": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778819143150": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778819285571": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778819415247": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778819577783": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778819665689": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778819799560": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778819962102": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778821382574": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778821455803": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778822392656": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778822939294": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778832659764": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778834215262": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778834836883": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778852752504": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778853141257": {
-        "orientation": "portrait",
-        "appid": "wxbdcccc90a18b77eb",
-        "buildOpenDataContextTemplate": "",
-        "separateEngine": false,
-        "highPerformanceMode": false,
-        "__version__": "1.0.4"
-      },
-      "1778856703087": {
         "orientation": "portrait",
         "appid": "wxbdcccc90a18b77eb",
         "buildOpenDataContextTemplate": "",
