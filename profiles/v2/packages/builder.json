@@ -48,8 +48,8 @@
         "progress": 1,
         "state": "success",
         "stage": "build",
-        "message": "2026-5-19 20:45:53 build success in 2 min 10 s!",
-        "detailMessage": "build task(wechatgame) in 130400!\r",
+        "message": "2026-5-19 21:43:03 build success in 17 s!",
+        "detailMessage": "// ---- build task wechatgame：onAfterBuild ----\r",
         "options": {
           "name": "crawclawOnline",
           "server": "https://crawclaw-1312271570.cos.ap-shanghai.myqcloud.com/",
@@ -125,7 +125,7 @@
           "__version__": "1.3.9",
           "logDest": "project://temp/builder/log/wechatgame2026-4-15 20-16.log"
         },
-        "time": "2026-5-19 20:43:42",
+        "time": "2026-5-19 21:42:46",
         "dirty": false
       }
     }

@@ -1,0 +1,134 @@
+{
+  "ver": "1.0.27",
+  "importer": "image",
+  "imported": true,
+  "uuid": "14e0cd50-0f75-474f-8120-0aaef29f2c81",
+  "files": [
+    ".json",
+    ".png"
+  ],
+  "subMetas": {
+    "6c48a": {
+      "importer": "texture",
+      "uuid": "14e0cd50-0f75-474f-8120-0aaef29f2c81@6c48a",
+      "displayName": "气运+1按钮",
+      "id": "6c48a",
+      "name": "texture",
+      "userData": {
+        "wrapModeS": "clamp-to-edge",
+        "wrapModeT": "clamp-to-edge",
+        "imageUuidOrDatabaseUri": "14e0cd50-0f75-474f-8120-0aaef29f2c81",
+        "isUuid": true,
+        "visible": false,
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "none",
+        "anisotropy": 0
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "f9941": {
+      "importer": "sprite-frame",
+      "uuid": "14e0cd50-0f75-474f-8120-0aaef29f2c81@f9941",
+      "displayName": "气运+1按钮",
+      "id": "f9941",
+      "name": "spriteFrame",
+      "userData": {
+        "trimThreshold": 1,
+        "rotated": false,
+        "offsetX": 9,
+        "offsetY": 7,
+        "trimX": 81,
+        "trimY": 31,
+        "width": 1325,
+        "height": 644,
+        "rawWidth": 1469,
+        "rawHeight": 720,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "packable": true,
+        "pixelsToUnit": 100,
+        "pivotX": 0.5,
+        "pivotY": 0.5,
+        "meshType": 0,
+        "vertices": {
+          "rawPosition": [
+            -662.5,
+            -322,
+            0,
+            662.5,
+            -322,
+            0,
+            -662.5,
+            322,
+            0,
+            662.5,
+            322,
+            0
+          ],
+          "indexes": [
+            0,
+            1,
+            2,
+            2,
+            1,
+            3
+          ],
+          "uv": [
+            81,
+            689,
+            1406,
+            689,
+            81,
+            45,
+            1406,
+            45
+          ],
+          "nuv": [
+            0.05513955071477195,
+            0.0625,
+            0.9571136827773996,
+            0.0625,
+            0.05513955071477195,
+            0.9569444444444445,
+            0.9571136827773996,
+            0.9569444444444445
+          ],
+          "minPos": [
+            -662.5,
+            -322,
+            0
+          ],
+          "maxPos": [
+            662.5,
+            322,
+            0
+          ]
+        },
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "14e0cd50-0f75-474f-8120-0aaef29f2c81@6c48a",
+        "atlasUuid": "",
+        "trimType": "auto"
+      },
+      "ver": "1.0.12",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "type": "sprite-frame",
+    "fixAlphaTransparencyArtifacts": false,
+    "hasAlpha": true,
+    "redirect": "14e0cd50-0f75-474f-8120-0aaef29f2c81@6c48a"
+  }
+}
