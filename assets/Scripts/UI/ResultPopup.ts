@@ -1,5 +1,7 @@
-import { _decorator, Component, Label, Node, instantiate, Color, director, Button, Layout, assetManager } from 'cc';
+import { _decorator, Component, Label, Node, Color, director, Button, assetManager, instantiate, Layout, sys, game, Sprite, ImageAsset, Texture2D, SpriteFrame } from 'cc';
+import { Config } from '../Config';
 import { calculateEstimatedScore } from '../Data/GameConstants';
+import { WeChatAdapter } from '../WeChat/WeChatAdapter';
 const { ccclass, property } = _decorator;
 
 @ccclass('ResultPopup')
@@ -9,12 +11,52 @@ export class ResultPopup extends Component {
     @property(Node) public itemTemplate: Node = null;
     @property(Button) public btnReturn: Button = null;
 
+    @property(Node) public shareSubmenu: Node = null;
+    @property(Node) public qrCodeNode: Node = null;
+
+    private _localPlayerName: string = '';
+    private _isWeChat: boolean = false;
+    private _isSharing: boolean = false;
+
+    public start(): void {
+        this._isWeChat = WeChatAdapter.instance.isWeChatEnvironment();
+        if (this.shareSubmenu) this.shareSubmenu.active = this._isWeChat;
+
+        if (this.qrCodeNode) this.qrCodeNode.active = false;
+
+        if (this._isWeChat && this.qrCodeNode) {
+            this._preloadQR();
+        }
+    }
+
+    private _preloadQR(): void {
+        const qrUrl = `https://${Config.CDN_HOST}/qrcode.png`;
+        assetManager.loadRemote<ImageAsset>(qrUrl, { ext: '.png' }, (err, imageAsset) => {
+            if (err) {
+                console.warn('[ResultPopup] QR码预加载失败:', err);
+                return;
+            }
+            const texture = new Texture2D();
+            texture.image = imageAsset;
+            const spriteFrame = new SpriteFrame();
+            spriteFrame.texture = texture;
+            const sprite = this.qrCodeNode.getComponent(Sprite);
+            if (sprite) {
+                sprite.spriteFrame = spriteFrame;
+                sprite.sizeMode = Sprite.SizeMode.CUSTOM;
+            }
+        });
+    }
+
     public init(data: any) {
         const gameState = data.gameState;
         if (!gameState) return;
 
         const players = gameState.players || [];
-        
+        this._isWeChat = WeChatAdapter.instance.isWeChatEnvironment();
+
+        if (this.shareSubmenu) this.shareSubmenu.active = this._isWeChat;
+
         if (gameState.status === 'waitingEndgameChoice') {
             const waitingList = gameState.waitingForEndgameChoice || [];
             const currentIndex = gameState.endgameChoiceIndex || 0;
@@ -24,6 +66,7 @@ export class ResultPopup extends Component {
                 if (btnLabel) btnLabel.string = `⏳ 等待 ${currentPlayer?.playerName || '他人'} 选择中...`;
                 this.btnReturn.interactable = false;
             }
+            if (this.shareSubmenu) this.shareSubmenu.active = false;
         } else {
             if (this.btnReturn) {
                 const btnLabel = this.btnReturn.getComponentInChildren(Label);
@@ -32,19 +75,27 @@ export class ResultPopup extends Component {
             }
         }
 
-        // 1. 计算每个玩家的详细得分
+        const localPlayerId = sys.localStorage.getItem('localPlayerId');
+
         const results = players.map((p: any) => {
             const stats = this.calculateFinalScore(p, gameState);
             return { player: p, ...stats };
         });
 
-        // 2. 排序：总分从大到小，同分比拼金币
         results.sort((a, b) => {
             if (b.total !== a.total) return b.total - a.total;
             return b.player.coins - a.player.coins;
         });
 
-        // 3. 渲染列表
+        results.some((res) => {
+            const isLocalPlayer = localPlayerId != null && Number(res.player.id) === Number(localPlayerId);
+            if (isLocalPlayer) {
+                this._localPlayerName = res.player.name || '';
+                return true;
+            }
+            return false;
+        });
+
         this.listContent.removeAllChildren();
         if (this.itemTemplate) this.itemTemplate.active = false;
 
@@ -53,13 +104,11 @@ export class ResultPopup extends Component {
             node.active = true;
             this.listContent.addChild(node);
 
-            // 兼容性抓取：无论节点是直接放在根节点下，还是放在 TopContainer 里，都能抓到！
             const topContainer = node.getChildByName('TopContainer') || node;
             const rankLabel = topContainer.getChildByName('RankLabel')?.getComponent(Label);
             const nameLabel = topContainer.getChildByName('NameLabel')?.getComponent(Label);
             const scoreLabel = topContainer.getChildByName('ScoreLabel')?.getComponent(Label);
 
-            // 【核心修复1】：精准抓取 DetailLabel 填入总览数据
             const detailLabel = topContainer.getChildByName('DetailLabel')?.getComponent(Label)
                 || topContainer.getChildByName('SummaryLabel')?.getComponent(Label);
 
@@ -71,36 +120,26 @@ export class ResultPopup extends Component {
             const detailTavern = detailsContainer?.getChildByName('DetailTavern')?.getComponent(Label);
             const detailRes = detailsContainer?.getChildByName('DetailRes')?.getComponent(Label);
 
-            // ==========================================
-            // 颜色与基础信息渲染
-            // ==========================================
             if (rankLabel) {
                 rankLabel.string = `第 ${index + 1} 名`;
-                if (index === 0) rankLabel.color = new Color(255, 215, 0); // 金色
-                else if (index === 1) rankLabel.color = new Color(200, 230, 255); // 冰蓝色
-                else if (index === 2) rankLabel.color = new Color(255, 184, 115); // 亮铜色
-                else rankLabel.color = new Color(255, 255, 255); // 白色
+                if (index === 0) rankLabel.color = new Color(255, 215, 0);
+                else if (index === 1) rankLabel.color = new Color(200, 230, 255);
+                else if (index === 2) rankLabel.color = new Color(255, 184, 115);
+                else rankLabel.color = new Color(255, 255, 255);
             }
 
             if (nameLabel) nameLabel.string = res.player.name;
             if (scoreLabel) scoreLabel.string = `${res.total} 分`;
 
-            // 成功填充你要求的总览格式！
             const bonusStr = res.bonusPoints > 0 ? ` | 额外: ${res.bonusPoints}分` : "";
             if (detailLabel) detailLabel.string = `德望: ${res.core}分 | 席位: ${res.tavern}分 | 资源: ${res.res}分${bonusStr}`;
 
-            // ==========================================
-            // 详细算式渲染
-            // ==========================================
             if (detailCore) {
                 detailCore.string = `核心乘积分 = 德${res.deVal} * 望${res.wangVal} = ${res.core}分`;
             }
             if (detailTavern) detailTavern.string = `上供席位分 =（${res.tavernList.length > 0 ? res.tavernList.join(' + ') : '0'} = ${res.tavern}分）`;
             if (detailRes) detailRes.string = `资源转换分 =（金币折算${res.coinsScore} + 海草折算${res.seaweedScore} + 虾笼折算${res.cagesScore} + 龙虾折算${res.lobstersScore} = ${res.res}分）`;
 
-            // ==========================================
-            // 下拉展开交互逻辑
-            // ==========================================
             let isExpanded = false;
             if (btnExpand) {
                 btnExpand.node.on(Button.EventType.CLICK, () => {
@@ -108,10 +147,73 @@ export class ResultPopup extends Component {
                     if (detailsContainer) detailsContainer.active = isExpanded;
                     if (arrowLabel) arrowLabel.string = isExpanded ? "▲" : "▼";
 
-                    // 强制刷新外层 ScrollView 的高度排版
                     const layout = this.listContent.getComponent(Layout);
                     if (layout) layout.updateLayout();
                 }, this);
+            }
+        });
+    }
+
+    public onShareResult(): void {
+        if (this._isSharing || !this._localPlayerName) return;
+        this._isSharing = true;
+
+        if (this.btnReturn) this.btnReturn.node.active = false;
+        if (this.shareSubmenu) this.shareSubmenu.active = false;
+        if (this.qrCodeNode) this.qrCodeNode.active = true;
+
+        requestAnimationFrame(() => {
+            const canvas = (game as any).canvas;
+            if (!canvas || typeof canvas.toTempFilePath !== 'function') {
+                console.warn('[ResultPopup] canvas.toTempFilePath 不可用');
+                if (this.qrCodeNode) this.qrCodeNode.active = false;
+                this._isSharing = false;
+                if (this.btnReturn) this.btnReturn.node.active = true;
+                if (this.shareSubmenu) this.shareSubmenu.active = true;
+                return;
+            }
+
+            canvas.toTempFilePath({
+                x: 0, y: 0,
+                width: canvas.width, height: canvas.height,
+                destWidth: canvas.width, destHeight: canvas.height,
+                fileType: 'png',
+                success: (res: any) => {
+                    if (this.qrCodeNode) this.qrCodeNode.active = false;
+
+                    WeChatAdapter.instance.shareImage(res.tempFilePath, (success) => {
+                        this._isSharing = false;
+                        if (this.btnReturn) this.btnReturn.node.active = true;
+                        if (this.shareSubmenu) this.shareSubmenu.active = true;
+                        if (success) {
+                            console.log('战果分享成功');
+                        } else {
+                            console.warn('战果分享失败');
+                        }
+                    });
+                },
+                fail: () => {
+                    if (this.qrCodeNode) this.qrCodeNode.active = false;
+                    this._isSharing = false;
+                    if (this.btnReturn) this.btnReturn.node.active = true;
+                    if (this.shareSubmenu) this.shareSubmenu.active = true;
+                    console.warn('[ResultPopup] 截图失败');
+                }
+            });
+        });
+    }
+
+    public onShareInviteFriend(): void {
+        if (this._isSharing) return;
+        this._isSharing = true;
+
+        WeChatAdapter.instance.shareGameInvite(this._localPlayerName, (success) => {
+            this._isSharing = false;
+            if (this.shareSubmenu) this.shareSubmenu.active = true;
+            if (success) {
+                console.log('邀请发送成功');
+            } else {
+                console.warn('邀请发送失败');
             }
         });
     }
@@ -121,10 +223,9 @@ export class ResultPopup extends Component {
     }
 
     public onBtnReturnClicked() {
-        cc.sys.localStorage.removeItem('currentGameState');
-        cc.sys.localStorage.removeItem('myLastPlacedArea');
-        cc.sys.localStorage.removeItem('myLastPlacedSlot');
-        // director.loadScene('Lobby');
+        sys.localStorage.removeItem('currentGameState');
+        sys.localStorage.removeItem('myLastPlacedArea');
+        sys.localStorage.removeItem('myLastPlacedSlot');
         assetManager.loadBundle('remote_assets', (err, bundle) => {
             if (err) return console.error(err);
             bundle.loadScene('Lobby', (err, sceneAsset) => {

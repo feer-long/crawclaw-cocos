@@ -84,6 +84,14 @@ interface WxRequestOptions {
     fail?: (err: any) => void;
 }
 
+interface WxShowShareImageMenuOptions {
+    path: string;
+    needShowEntrance?: boolean;
+    entrancePath?: string;
+    success?: () => void;
+    fail?: (err: any) => void;
+}
+
 interface Wx {
     showShareMenu(options: WxShowShareMenuOptions): void;
     onShareAppMessage(callback: () => { title: string; imageUrl: string }): void;
@@ -98,6 +106,7 @@ interface Wx {
     getSetting(options: WxGetSettingOptions): void;
     login(options: WxLoginOptions): void;
     request(options: WxRequestOptions): void;
+    showShareImageMenu(options: WxShowShareImageMenuOptions): void;
 }
 
 interface WxUserInfoButton {

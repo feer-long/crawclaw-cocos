@@ -138,6 +138,45 @@ export class WeChatAdapter {
         });
     }
 
+    public shareGameInvite(playerName: string, callback: (success: boolean) => void): void {
+        if (!this.isWeChatEnvironment()) {
+            callback(false);
+            return;
+        }
+
+        wx.shareAppMessage({
+            title: '来玩山海暨！一起斗龙鳌吧！',
+            imageUrl: `https://${Config.CDN_HOST}/logo.png`,
+            query: 'invite=true',
+            success: () => {
+                callback(true);
+            },
+            fail: (err) => {
+                console.error('邀请分享失败:', err);
+                callback(false);
+            }
+        });
+    }
+
+    public shareImage(path: string, callback: (success: boolean) => void): void {
+        if (!this.isWeChatEnvironment()) {
+            callback(false);
+            return;
+        }
+
+        wx.showShareImageMenu({
+            path: path,
+            success: () => {
+                console.log('[WeChatAdapter] 分享成功');
+                callback(true);
+            },
+            fail: (err: any) => {
+                console.warn('[WeChatAdapter] 分享失败:', JSON.stringify(err));
+                callback(false);
+            }
+        });
+    }
+
     private _authButton: WxUserInfoButton | null = null;
 
     public getUserInfoRecommended(

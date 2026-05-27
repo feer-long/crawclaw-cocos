@@ -1,4 +1,4 @@
-import { EventTarget, sys } from 'cc';
+import { EventTarget, sys, director } from 'cc';
 import { WeChatAdapter } from './WeChatAdapter';
 import { NetworkManager } from '../Network/NetworkManager';
 
@@ -24,6 +24,8 @@ export class InviteManager {
             this._onShowCallback = (res: any) => {
                 if (res.query && res.query.roomId) {
                     this.handleFriendJoin(res.query);
+                } else if (res.query && res.query.invite === 'true') {
+                    this.handleInviteEntry();
                 }
             };
             wx.onShow(this._onShowCallback);
@@ -31,6 +33,11 @@ export class InviteManager {
 
         NetworkManager.instance.eventTarget.on('playerJoined', this.onPlayerJoined, this);
         NetworkManager.instance.eventTarget.on('error', this.onError, this);
+    }
+
+    private handleInviteEntry(): void {
+        console.log('从分享入口进入游戏，跳转到登录页');
+        director.loadScene('Login');
     }
 
     public inviteFriend(roomId: string, playerName: string): void {
