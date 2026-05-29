@@ -29,6 +29,9 @@ export class RoomView extends Component {
     @property([Node])
     public kickButtons: Node[] = [];
 
+    @property([Node])
+    public addAiButtons: Node[] = [];
+
     @property(Node)
     public btnLeaveRoom: Node = null;
 
@@ -49,6 +52,8 @@ export class RoomView extends Component {
         NetworkManager.instance.eventTarget.on('playerKicked', this.onPlayerKicked, this);
         NetworkManager.instance.eventTarget.on('playerLeft', this.onPlayerLeft, this);
         NetworkManager.instance.eventTarget.on('error', this.onRoomError, this);
+        NetworkManager.instance.eventTarget.on('aiAdded', this.onAiAdded, this);
+        NetworkManager.instance.eventTarget.on('aiKicked', this.onAiKicked, this);
 
         // 读取大厅传过来的初始数据
         const stateStr = sys.localStorage.getItem('initialRoomState');
@@ -82,7 +87,7 @@ export class RoomView extends Component {
         // 【关键修复：断开大厅，连接房间专属 WebSocket】
         // 只有 userId 匹配到房间玩家时才连接游戏 WS
         if (roomId && this.localPlayerId !== -1) {
-            const roomWsUrl = `wss://${Config.API_HOST}/ws/${roomId}/${this.localPlayerId}`;
+            const roomWsUrl = `ws://${Config.API_HOST}/ws/${roomId}/${this.localPlayerId}`;
             console.log("正在切换到房间专属通信通道...", roomWsUrl);
 
             // NetworkManager 内部会自动 close 掉旧的大厅连接，建立新连接
@@ -105,6 +110,15 @@ export class RoomView extends Component {
             if (!btn) continue;
             btn.node.on(Button.EventType.CLICK, this._kickBtnClickHandler, this);
         }
+
+        // 设置添加AI按钮点击监听
+        for (let i = 0; i < this.addAiButtons.length; i++) {
+            const btnNode = this.addAiButtons[i];
+            if (!isValid(btnNode)) continue;
+            const btn = btnNode.getComponent(Button);
+            if (!btn) continue;
+            btn.node.on(Button.EventType.CLICK, this._addAiBtnClickHandler, this);
+        }
     }
 
     onDestroy() {
@@ -115,6 +129,8 @@ export class RoomView extends Component {
         NetworkManager.instance.eventTarget.off('playerKicked', this.onPlayerKicked, this);
         NetworkManager.instance.eventTarget.off('playerLeft', this.onPlayerLeft, this);
         NetworkManager.instance.eventTarget.off('error', this.onRoomError, this);
+        NetworkManager.instance.eventTarget.off('aiAdded', this.onAiAdded, this);
+        NetworkManager.instance.eventTarget.off('aiKicked', this.onAiKicked, this);
 
         // 清理踢出按钮监听
         for (let i = 0; i < this.kickButtons.length; i++) {
@@ -123,6 +139,15 @@ export class RoomView extends Component {
             const btn = btnNode.getComponent(Button);
             if (!btn) continue;
             btn.node.off(Button.EventType.CLICK, this._kickBtnClickHandler, this);
+        }
+
+        // 清理添加AI按钮监听
+        for (let i = 0; i < this.addAiButtons.length; i++) {
+            const btnNode = this.addAiButtons[i];
+            if (!isValid(btnNode)) continue;
+            const btn = btnNode.getComponent(Button);
+            if (!btn) continue;
+            btn.node.off(Button.EventType.CLICK, this._addAiBtnClickHandler, this);
         }
 
         InviteManager.instance.destroy();
@@ -157,10 +182,16 @@ export class RoomView extends Component {
             this.isReady = false;
         }
 
-        // 2. 按玩家 ID 刷新每个槽位，在每个分支显式设置所有按钮状态
+        // 2. 先隐藏所有添加AI按钮
+        for (let j = 0; j < this.addAiButtons.length; j++) {
+            if (this.addAiButtons[j]) this.addAiButtons[j].active = false;
+        }
+
+        // 3. 按玩家 ID 刷新每个槽位，在每个分支显式设置所有按钮状态
         for (let i = 0; i < 4; i++) {
             const p = players.find((pp: any) => Number(pp.id) === i);
             if (p) {
+                const isAI = !!p.isAI;
                 let nameStr = p.name;
                 const isMe = (Number(p.id) === Number(this.localPlayerId) || p.userId === localUserId) && this.localPlayerId !== -1;
                 if (isMe) {
@@ -169,7 +200,10 @@ export class RoomView extends Component {
                 }
 
                 this.playerNames[i].string = nameStr;
-                if (p.isHost) {
+                if (isAI) {
+                    this.playerReadyStatus[i].string = "🤖 AI";
+                    this.playerReadyStatus[i].color = new Color(100, 200, 255);
+                } else if (p.isHost) {
                     this.playerReadyStatus[i].string = p.isOnline === false ? "离线" : "👑";
                     this.playerReadyStatus[i].color = p.isOnline === false ? new Color(128, 128, 128) : new Color(255, 255, 0);
                 } else {
@@ -195,6 +229,9 @@ export class RoomView extends Component {
 
                 // 空槽位：没有可踢的玩家
                 if (this.kickButtons[i]) this.kickButtons[i].active = false;
+
+                // 添加AI按钮：仅房主可见
+                if (this.addAiButtons[i]) this.addAiButtons[i].active = this.isHost;
             }
         }
 
@@ -275,14 +312,38 @@ export class RoomView extends Component {
             console.warn(`没有玩家在槽位 ${slotIndex}`);
             return;
         }
-        NetworkManager.instance.send('clientRoomAction', 'kickPlayer', {
-            targetPlayerId: Number(p.id)
-        });
+
+        if (p.isAI) {
+            NetworkManager.instance.send('clientRoomAction', 'kickAI', {
+                targetPlayerId: Number(p.id)
+            });
+        } else {
+            NetworkManager.instance.send('clientRoomAction', 'kickPlayer', {
+                targetPlayerId: Number(p.id)
+            });
+        }
     }
 
     // 点击离开房间
     public onBtnLeaveRoomClicked() {
         NetworkManager.instance.send('clientRoomAction', 'leaveRoom', {});
+    }
+
+    // 添加AI按钮点击处理
+    private _addAiBtnClickHandler(btnComp: Button) {
+        const slotIndex = this.addAiButtons.indexOf(btnComp.node);
+        if (slotIndex === -1) return;
+        NetworkManager.instance.send('clientRoomAction', 'addAI', {});
+    }
+
+    // AI添加成功
+    private onAiAdded(data: any) {
+        console.log("🤖 AI玩家已添加:", data);
+    }
+
+    // AI被踢出
+    private onAiKicked(data: any) {
+        console.log("🤖 AI玩家已被踢出:", data);
     }
 
     // 被房主踢出时触发
