@@ -3,19 +3,19 @@
  */
 
 export const GRADE_NAMES: Record<string, string> = {
-    'normal': '普虾',
-    'grade3': '三品',
-    'grade2': '二品',
-    'grade1': '一品',
-    'royal': '👑虾王'
+    'normal': '幼型灵螯',
+    'grade3': '磐石玄甲螯',
+    'grade2': '昆仑冰晶螯',
+    'grade1': '祝融赤焰螯',
+    'royal': '山海龙螯'
 };
 
 export const GRADE_NAMES_WITH_SCORE: Record<string, string> = {
-    'normal': '普虾(0分)',
-    'grade3': '三品(1分)',
-    'grade2': '二品(2分)',
-    'grade1': '一品(3分)',
-    'royal': '👑虾王(4分)'
+    'normal': '幼型灵螯',
+    'grade3': '磐石玄甲螯',
+    'grade2': '昆仑冰晶螯',
+    'grade1': '祝融赤焰螯',
+    'royal': '山海龙螯'
 };
 
 export const GRADE_ORDER = ['normal', 'grade3', 'grade2', 'grade1', 'royal'];
