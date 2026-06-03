@@ -1,9 +1,7 @@
-import { _decorator, Component, Label, Button, Node, instantiate, Color, Sprite } from 'cc';
+import { _decorator, Component, Label, Button, Node, instantiate, Color, Sprite, SpriteFrame } from 'cc';
 import { NetworkManager } from '../Network/NetworkManager';
 import { GRADE_NAMES, GRADE_NAMES_WITH_SCORE, getGradeValue } from '../Data/GameConstants';
 const { ccclass, property } = _decorator;
-
-
 
 @ccclass('TributePopup')
 export class TributePopup extends Component {
@@ -12,12 +10,29 @@ export class TributePopup extends Component {
     @property(Label) public hintLabel: Label = null;
 
     @property(Node) public tavernScrollViewContent: Node = null;
-    @property(Node) public tavernHeaderTemplate: Node = null;
-    @property(Node) public cardTemplate: Node = null;
+    // 【修改点1】将原来的单独模板替换为整组的 oneTavern 模板
+    @property(Node) public oneTavernTemplate: Node = null;
 
     @property(Node) public inventoryScrollView: Node = null;
     @property(Node) public inventoryContent: Node = null;
     @property(Node) public itemTemplate: Node = null;
+
+    // ================= 【修改点2】动态绑定的素材框与图片 =================
+    @property({ type: SpriteFrame, tooltip: '0级金底框' }) public frameGold: SpriteFrame = null;
+    @property({ type: SpriteFrame, tooltip: '0级山海龙螯' }) public iconRoyal: SpriteFrame = null;
+
+    @property({ type: SpriteFrame, tooltip: '1级红底框' }) public frameRed: SpriteFrame = null;
+    @property({ type: SpriteFrame, tooltip: '1级祝融赤焰螯' }) public iconGrade1: SpriteFrame = null;
+
+    @property({ type: SpriteFrame, tooltip: '2级蓝底框' }) public frameBlue: SpriteFrame = null;
+    @property({ type: SpriteFrame, tooltip: '2级昆仑冰晶螯' }) public iconGrade2: SpriteFrame = null;
+
+    @property({ type: SpriteFrame, tooltip: '3级灰底框' }) public frameGrey: SpriteFrame = null;
+    @property({ type: SpriteFrame, tooltip: '3级磐石玄甲螯' }) public iconGrade3: SpriteFrame = null;
+
+    @property({ type: SpriteFrame, tooltip: '4级绿底框' }) public frameGreen: SpriteFrame = null;
+    @property({ type: SpriteFrame, tooltip: '4级幼型灵螯' }) public iconNormal: SpriteFrame = null;
+    // ======================================================================
 
     @property(Button) public btnToggleNaked: Button = null;
     @property(Button) public btnRewardDe: Button = null;
@@ -52,6 +67,8 @@ export class TributePopup extends Component {
     private rewardChoice: 'de' | 'wang' = 'de';
     private bonusChoice: 'de' | 'wang' = 'de';
 
+    // 依然用数组存起来方便 refreshUI 统一管理颜色
+    private tavernGroupNodes: Node[] = [];
     private headerNodes: Node[] = [];
     private cardNodes: Node[] = [];
     private itemNodes: Node[] = [];
@@ -88,23 +105,15 @@ export class TributePopup extends Component {
     }
 
     private _cleanupChoiceUI() {
-        try {
-            if (this.waitingChoiceNode) {
-                this.waitingChoiceNode.active = false;
-            }
-            if (this.waitingChoiceLabel) {
-                this.waitingChoiceLabel.string = "";
-            }
-            if (this.btnConfirm && this.btnConfirm.node) {
-                this.btnConfirm.node.active = true;
-                this.btnConfirm.interactable = true; // 恢复确认按钮可点击
-            }
-            if (this.btnSkip && this.btnSkip.node) {
-                this.btnSkip.node.active = true;
-                this.btnSkip.interactable = true; // 恢复跳过按钮可点击
-            }
-        } catch (e) {
-            console.error('清理选择 UI 时出错:', e);
+        if (this.waitingChoiceNode) this.waitingChoiceNode.active = false;
+        if (this.waitingChoiceLabel) this.waitingChoiceLabel.string = "";
+        if (this.btnConfirm && this.btnConfirm.node) {
+            this.btnConfirm.node.active = true;
+            this.btnConfirm.interactable = true;
+        }
+        if (this.btnSkip && this.btnSkip.node) {
+            this.btnSkip.node.active = true;
+            this.btnSkip.interactable = true;
         }
     }
 
@@ -121,23 +130,15 @@ export class TributePopup extends Component {
         });
     }
 
-    /**
-         * 动态生成一个选项按钮
-         * @param btnText 按钮显示的文字
-         * @param action 提交的动作类型
-         * @param costOrTarget 附带的参数（消耗或目标）
-         */
     private createDynamicChoiceBtn(btnText: string, action: string, costOrTarget: any) {
         if (!this.choiceBtnTemplate || !this.choiceContainer) return;
 
         const btnNode = instantiate(this.choiceBtnTemplate);
         btnNode.active = true;
 
-        // 替换按钮上的文字
         const label = btnNode.getComponentInChildren(Label);
         if (label) label.string = btnText;
 
-        // 绑定点击事件，直接将参数透传给现有的 _submitChoice
         btnNode.on(Button.EventType.CLICK, () => {
             this._submitChoice(action, costOrTarget);
         }, this);
@@ -199,11 +200,90 @@ export class TributePopup extends Component {
         return null;
     }
 
+    // 【修改点3】：渲染酒楼，改用 oneTavernTemplate
     private renderTaverns() {
-        this.headerNodes.forEach(n => n.destroy());
-        this.cardNodes.forEach(n => n.destroy());
+        this.tavernGroupNodes.forEach(n => n.destroy());
+        this.tavernGroupNodes = [];
         this.headerNodes = [];
         this.cardNodes = [];
+
+        // 辅助函数：专门用来配置一张具体的卡牌节点（左或右）
+        const setupCardNode = (node: Node, card: any, tId: number, hasCompleted: boolean, isDummy: boolean) => {
+            node.active = true;
+            const nameLabel = node.getChildByName('NameLabel')?.getComponent(Label);
+            const reqLabel = node.getChildByName('ReqLabel')?.getComponent(Label);
+            const effectLabel = node.getChildByName('EffectLabel')?.getComponent(Label);
+
+            if (isDummy || !card) {
+                if (nameLabel) nameLabel.string = "【暂无卡牌】";
+                if (reqLabel) reqLabel.string = "";
+                if (effectLabel) effectLabel.string = "";
+                const btn = node.getComponent(Button);
+                if (btn) btn.interactable = false;
+                (node as any)._cardData = { tavernId: tId, isDummy: true, hasCompleted: true };
+                this.cardNodes.push(node);
+                return;
+            }
+
+            let rewardStr = "";
+            if (card.reward) {
+                if (card.reward.de) rewardStr += `道+${card.reward.de} `;
+                if (card.reward.wang) rewardStr += `运+${card.reward.wang} `;
+            }
+            if (nameLabel) nameLabel.string = `【${card.name}】 🎁${rewardStr}`;
+
+            let reqStr = "消耗: ";
+            const reqs = card.requirements || {};
+            if (reqs.coins) reqStr += `贝币x${reqs.coins} `;
+            if (reqs.seaweed) reqStr += `仙草x${reqs.seaweed} `;
+            if (reqs.cages) reqStr += `灵鼎x${reqs.cages} `;
+            if (reqs.lobsters) {
+                Object.keys(reqs.lobsters).forEach(k => {
+                    reqStr += `${GRADE_NAMES[k] ? GRADE_NAMES[k].split('(')[0] : k}x${reqs.lobsters[k]} `;
+                });
+            }
+            if (reqLabel) reqLabel.string = reqStr;
+            if (effectLabel) effectLabel.string = card.effectDesc ? `效果: ${card.effectDesc}` : "";
+
+            node.on(Button.EventType.CLICK, () => {
+                if (hasCompleted) return;
+                if (this.isNakedTribute) {
+                    this.selectedTavernId = tId;
+                    this.refreshUI();
+                    return;
+                }
+
+                const btn = node.getComponent(Button);
+                if (!btn || !btn.interactable) return;
+
+                if (this.selectedTavernId !== tId) {
+                    if (!this.checkResources([card])) {
+                        this.hintLabel.string = "❌ 资源不足，无法完成该卡牌";
+                        return;
+                    }
+                    this.selectedTavernId = tId;
+                    this.selectedCardIds = [card.id];
+                } else {
+                    const idx = this.selectedCardIds.indexOf(card.id);
+                    if (idx > -1) {
+                        this.selectedCardIds.splice(idx, 1);
+                        if (this.selectedCardIds.length === 0) this.selectedTavernId = -1;
+                    } else {
+                        const selectedCardsObjs = this.selectedCardIds.map(cid => this.getCardById(cid));
+                        selectedCardsObjs.push(card);
+                        if (!this.checkResources(selectedCardsObjs)) {
+                            this.hintLabel.string = "❌ 资源不足以同时献祭这两张卡牌";
+                            return;
+                        }
+                        this.selectedCardIds.push(card.id);
+                    }
+                }
+                this.refreshUI();
+            }, this);
+
+            (node as any)._cardData = { tavernId: tId, cardObj: card, hasCompleted: hasCompleted, isDummy: false };
+            this.cardNodes.push(node);
+        };
 
         for (let tId = 0; tId < this.taverns.length; tId++) {
             const tavern = this.taverns[tId];
@@ -219,7 +299,6 @@ export class TributePopup extends Component {
             if (hasCompleted) {
                 const compVal = this.player.tavernCompletions[tId];
                 if (typeof compVal === 'number') {
-                    // 服务器传来的是入驻次序 (1, 2, 3, 4)，需转换为分数 (3, 2, 1, 0)
                     myScore = Math.max(0, 4 - compVal);
                 } else {
                     const orderList = (tavernOrder[tId] || tavernOrder[tId.toString()] || []);
@@ -228,118 +307,63 @@ export class TributePopup extends Component {
                 }
             }
 
-            const headerNode = instantiate(this.tavernHeaderTemplate);
-            headerNode.active = true;
-            this.tavernScrollViewContent.addChild(headerNode);
-
-            headerNode.on(Button.EventType.CLICK, () => {
-                if (hasCompleted) return;
-
-                if (this.selectedTavernId === tId) {
-                    this.selectedTavernId = -1;
-                    this.selectedCardIds = [];
-                } else {
-                    this.selectedTavernId = tId;
-                    this.selectedCardIds = [];
-                }
-                this.refreshUI();
-            }, this);
-
-            (headerNode as any)._tavernData = { tId, nextScore, hasCompleted, myScore };
-            this.headerNodes.push(headerNode);
-
-            if (cards.length === 0) {
-                const node = instantiate(this.cardTemplate);
-                node.active = true;
-                this.tavernScrollViewContent.addChild(node);
-
-                const nameLabel = node.getChildByName('NameLabel')?.getComponent(Label);
-                const reqLabel = node.getChildByName('ReqLabel')?.getComponent(Label);
-                const effectLabel = node.getChildByName('EffectLabel')?.getComponent(Label);
-                if (nameLabel) nameLabel.string = "【暂无卡牌】";
-                if (reqLabel) reqLabel.string = "";
-                if (effectLabel) effectLabel.string = "";
-
-                const btn = node.getComponent(Button);
-                if (btn) btn.interactable = false;
-
-                (node as any)._cardData = { tavernId: tId, isDummy: true, hasCompleted: true };
-                this.cardNodes.push(node);
-                continue;
+            // 为了应对未来可能多于2张卡牌的情况，按每2张卡切割成一组生成
+            const pairs = [];
+            for (let i = 0; i < Math.max(1, cards.length); i += 2) {
+                pairs.push(cards.slice(i, i + 2));
             }
 
-            for (let cId = 0; cId < cards.length; cId++) {
-                const card = cards[cId];
-                const node = instantiate(this.cardTemplate);
-                node.active = true;
-                this.tavernScrollViewContent.addChild(node);
+            for (let pIdx = 0; pIdx < pairs.length; pIdx++) {
+                const pair = pairs[pIdx];
 
-                const nameLabel = node.getChildByName('NameLabel')?.getComponent(Label);
-                const reqLabel = node.getChildByName('ReqLabel')?.getComponent(Label);
-                const effectLabel = node.getChildByName('EffectLabel')?.getComponent(Label);
+                // 实例化整组
+                const groupNode = instantiate(this.oneTavernTemplate);
+                groupNode.active = true;
+                this.tavernScrollViewContent.addChild(groupNode);
+                this.tavernGroupNodes.push(groupNode);
 
-                let rewardStr = "";
-                if (card.reward) {
-                    if (card.reward.de) rewardStr += `德+${card.reward.de} `;
-                    if (card.reward.wang) rewardStr += `望+${card.reward.wang} `;
-                }
-                if (nameLabel) nameLabel.string = `【${card.name}】 🎁${rewardStr}`;
+                const headerNode = groupNode.getChildByName('TavernHeaderTemplate');
+                const cardLeft = groupNode.getChildByName('CardTemplate_left');
+                const cardRight = groupNode.getChildByName('CardTemplate_right');
 
-                let reqStr = "消耗: ";
-                const reqs = card.requirements || {};
-                if (reqs.coins) reqStr += `💰x${reqs.coins} `;
-                if (reqs.seaweed) reqStr += `🌿x${reqs.seaweed} `;
-                if (reqs.cages) reqStr += `🛒x${reqs.cages} `;
-                if (reqs.lobsters) {
-                    Object.keys(reqs.lobsters).forEach(k => {
-                        reqStr += `${GRADE_NAMES[k] ? GRADE_NAMES[k].split('(')[0] : k}x${reqs.lobsters[k]} `;
-                    });
-                }
-                if (reqLabel) reqLabel.string = reqStr;
-                if (effectLabel) effectLabel.string = card.effectDesc ? `效果: ${card.effectDesc}` : "";
-
-                node.on(Button.EventType.CLICK, () => {
-                    if (hasCompleted) return;
-                    if (this.isNakedTribute) {
-                        this.selectedTavernId = tId;
-                        this.refreshUI();
-                        return;
-                    }
-
-                    const btn = node.getComponent(Button);
-                    if (!btn || !btn.interactable) return;
-
-                    if (this.selectedTavernId !== tId) {
-                        if (!this.checkResources([card])) {
-                            this.hintLabel.string = "❌ 资源不足，无法完成该卡牌";
-                            return;
-                        }
-                        this.selectedTavernId = tId;
-                        this.selectedCardIds = [card.id];
-                    } else {
-                        const idx = this.selectedCardIds.indexOf(card.id);
-                        if (idx > -1) {
-                            this.selectedCardIds.splice(idx, 1);
-                            if (this.selectedCardIds.length === 0) this.selectedTavernId = -1;
+                // 设置表头 (只在第一排显示酒楼表头)
+                if (pIdx === 0 && headerNode) {
+                    headerNode.on(Button.EventType.CLICK, () => {
+                        if (hasCompleted) return;
+                        if (this.selectedTavernId === tId) {
+                            this.selectedTavernId = -1;
+                            this.selectedCardIds = [];
                         } else {
-                            const selectedCardsObjs = this.selectedCardIds.map(cid => this.getCardById(cid));
-                            selectedCardsObjs.push(card);
-                            if (!this.checkResources(selectedCardsObjs)) {
-                                this.hintLabel.string = "❌ 资源不足以同时上供这两张卡牌";
-                                return;
-                            }
-                            this.selectedCardIds.push(card.id);
+                            this.selectedTavernId = tId;
+                            this.selectedCardIds = [];
                         }
-                    }
-                    this.refreshUI();
-                }, this);
+                        this.refreshUI();
+                    }, this);
 
-                (node as any)._cardData = { tavernId: tId, cardObj: card, hasCompleted: hasCompleted, isDummy: false };
-                this.cardNodes.push(node);
+                    (headerNode as any)._tavernData = { tId, nextScore, hasCompleted, myScore };
+                    this.headerNodes.push(headerNode);
+                } else if (headerNode) {
+                    headerNode.active = false;
+                }
+
+                // 注入卡牌数据
+                if (cards.length === 0) {
+                    if (cardLeft) setupCardNode(cardLeft, null, tId, true, true);
+                    if (cardRight) cardRight.active = false;
+                } else {
+                    if (cardLeft) setupCardNode(cardLeft, pair[0], tId, hasCompleted, false);
+
+                    if (pair.length > 1) {
+                        if (cardRight) setupCardNode(cardRight, pair[1], tId, hasCompleted, false);
+                    } else {
+                        if (cardRight) cardRight.active = false; // 只有一张卡时，隐藏右侧
+                    }
+                }
             }
         }
     }
 
+    // 【修改点4】：渲染背包，动态替换底框和内图
     private renderInventory() {
         this.itemNodes.forEach(n => n.destroy());
         this.itemNodes = [];
@@ -350,6 +374,10 @@ export class TributePopup extends Component {
             node.active = true;
             this.inventoryContent.addChild(node);
 
+            // 获取节点：假设底图在根节点，里面的虾图在名为 'Sprite' 的子节点
+            const frameSprite = node.getComponent(Sprite);
+            const iconSprite = node.getChildByName('Sprite')?.getComponent(Sprite);
+
             const label = node.getComponentInChildren(Label);
             if (label) {
                 if (item.data.grade) {
@@ -357,6 +385,29 @@ export class TributePopup extends Component {
                 } else {
                     label.string = `🔖[${item.data.name}](4分)`;
                 }
+            }
+
+            // 核心逻辑：根据 grade 切换预加载好的图片
+            if (item.data.grade) {
+                let targetFrame = this.frameGreen;
+                let targetIcon = this.iconNormal;
+
+                switch (item.data.grade) {
+                    case 'royal':
+                        targetFrame = this.frameGold; targetIcon = this.iconRoyal; break;
+                    case 'grade1':
+                        targetFrame = this.frameRed; targetIcon = this.iconGrade1; break;
+                    case 'grade2':
+                        targetFrame = this.frameBlue; targetIcon = this.iconGrade2; break;
+                    case 'grade3':
+                        targetFrame = this.frameGrey; targetIcon = this.iconGrade3; break;
+                    case 'normal':
+                    default:
+                        targetFrame = this.frameGreen; targetIcon = this.iconNormal; break;
+                }
+
+                if (frameSprite && targetFrame) frameSprite.spriteFrame = targetFrame;
+                if (iconSprite && targetIcon) iconSprite.spriteFrame = targetIcon;
             }
 
             const val = getGradeValue(item.data.grade);
@@ -384,10 +435,10 @@ export class TributePopup extends Component {
     }
 
     private refreshUI() {
-        this.resourceLabel.string = `拥有: 💰${this.player.coins} 🌿${this.player.seaweed} 🛒${this.player.cages} 🦞${this.player.lobsters?.length || 0} | 德:${this.player.de} 望:${this.player.wang}`;
+        this.resourceLabel.string = `拥有: 贝币:${this.player.coins} 仙草:${this.player.seaweed} 灵鼎:${this.player.cages} 灵螯:${this.player.lobsters?.length || 0} | 道:${this.player.de} 运:${this.player.wang}`;
 
         const nakedLabel = this.btnToggleNaked.getComponentInChildren(Label);
-        if (nakedLabel) nakedLabel.string = this.isNakedTribute ? "🔘 裸交模式 (已开启)" : "🔘 裸交模式 (关闭)";
+        if (nakedLabel) nakedLabel.string = this.isNakedTribute ? "直接献祭 (开)" : "直接献祭 (关)";
         this.btnToggleNaked.getComponent(Sprite).color = this.isNakedTribute ? new Color(255, 100, 100) : new Color(220, 220, 220);
 
         this.btnRewardDe.interactable = this.isNakedTribute;
@@ -411,7 +462,6 @@ export class TributePopup extends Component {
             }
         }
 
-        // 【关键排错】：如果在编辑器里没拖入节点，就在控制台报错提醒！
         if (this.btnBonusDe && this.btnBonusWang) {
             this.btnBonusDe.node.active = hasTitleBonus;
             this.btnBonusWang.node.active = hasTitleBonus;
@@ -422,8 +472,6 @@ export class TributePopup extends Component {
                 this.btnBonusDe.getComponent(Sprite).color = (this.bonusChoice === 'de') ? new Color(255, 200, 100) : new Color(220, 220, 220);
                 this.btnBonusWang.getComponent(Sprite).color = (this.bonusChoice === 'wang') ? new Color(255, 200, 100) : new Color(220, 220, 220);
             }
-        } else {
-            console.error("❌ 严重错误: 称号额外加成按钮 btnBonusDe 或 btnBonusWang 未在 Cocos 面板绑定！");
         }
 
         this.headerNodes.forEach(node => {
@@ -431,12 +479,14 @@ export class TributePopup extends Component {
             const label = node.getComponent(Label);
             if (label) {
                 if (hData.hasCompleted) {
-                    label.string = `[${hData.tId + 1}号楼] (你已入驻) 席位分: ${hData.myScore}分`;
-                    label.color = new Color(160, 160, 160);
+                    // label.string = `[${hData.tId + 1}号楼] (你已入驻) 席位分: ${hData.myScore}分`;
+                    label.string = `此祭坛你已献祭过`;
+                    label.color = new Color(136, 104, 165);
                 } else {
                     const isSelected = (this.selectedTavernId === hData.tId);
-                    label.string = `${isSelected ? "👉 " : ""}[${hData.tId + 1}号楼] 剩余席位分: ${hData.nextScore}分`;
-                    label.color = isSelected ? new Color(255, 100, 0) : new Color(0, 0, 0);
+                    // label.string = `${isSelected ? "👉 " : ""}[${hData.tId + 1}号楼] 剩余席位分: ${hData.nextScore}分`;
+                    label.string = `[${hData.tId + 1}号祭坛] (${hData.nextScore}分)`;
+                    label.color = isSelected ? new Color(231, 231, 77) : new Color(255, 255, 255);
                 }
             }
         });
@@ -475,23 +525,23 @@ export class TributePopup extends Component {
             const btn = node.getComponent(Button);
 
             if (cData.isDummy) {
-                sprite.color = new Color(220, 220, 220);
+                if(sprite) sprite.color = new Color(220, 220, 220);
                 if (btn) btn.interactable = false;
             } else if (cData.hasCompleted) {
-                sprite.color = new Color(200, 200, 200);
+                if(sprite) sprite.color = new Color(200, 200, 200);
                 if (btn) btn.interactable = false;
             } else if (this.isNakedTribute) {
-                sprite.color = (this.selectedTavernId === cData.tavernId) ? new Color(235, 235, 235) : new Color(245, 245, 245);
+                if(sprite) sprite.color = (this.selectedTavernId === cData.tavernId) ? new Color(235, 235, 235) : new Color(245, 245, 245);
                 if (btn) btn.interactable = true;
             } else {
                 const canAffordSingle = this.checkResources([cData.cardObj]);
                 if (!canAffordSingle) {
-                    sprite.color = new Color(255, 235, 235);
+                    if(sprite) sprite.color = new Color(255, 235, 235);
                     if (btn) btn.interactable = false;
                 } else {
                     if (btn) btn.interactable = true;
                     const isSelected = this.selectedTavernId === cData.tavernId && this.selectedCardIds.includes(cData.cardObj.id);
-                    sprite.color = isSelected ? new Color(255, 200, 100) : new Color(240, 240, 240);
+                    if(sprite) sprite.color = isSelected ? new Color(255, 200, 100) : new Color(240, 240, 240);
                 }
             }
         });
@@ -512,7 +562,7 @@ export class TributePopup extends Component {
             const sprite = node.getComponent(Sprite);
             if (sprite) {
                 const isSelected = this.selectedItemIds.includes(itemData.id);
-                sprite.color = isSelected ? new Color(100, 200, 100) : new Color(220, 240, 255);
+                sprite.color = isSelected ? new Color(100, 200, 100) : new Color(255, 255, 255);
             }
         });
 
@@ -520,18 +570,18 @@ export class TributePopup extends Component {
 
         if (this.isNakedTribute) {
             if (this.selectedTavernId === -1) {
-                this.hintLabel.string = "👈 裸交模式：请先在上方点击表头选择你要入驻的【酒楼】";
+                this.hintLabel.string = "直接献祭：请先选择你要封禅的祭坛";
             } else if (needsLobster && visibleItemCount === 0) {
-                this.hintLabel.string = "❌ 你的背包中没有【3品及以上】的祭品，无法裸交！";
+                this.hintLabel.string = "❌ 你的背包中没有【3级以上】的灵螯，无法直接献祭！";
             } else if (this.selectedItemIds.length === this.reqLobsterCount) {
-                this.hintLabel.string = `✅ 确认献祭此祭品，裸交入驻 ${this.selectedTavernId + 1} 号楼吗？`;
+                this.hintLabel.string = `✅ 确认献祭此祭品，直接献祭封禅 ${this.selectedTavernId + 1} 号祭坛吗？`;
                 canConfirm = true;
             } else {
-                this.hintLabel.string = "👇 裸交模式：请在下方选择【1只】3品以上祭品";
+                this.hintLabel.string = "直接献祭：请在下方选择【1只】3级以上灵螯";
             }
         } else {
             if (this.selectedTavernId === -1 || this.selectedCardIds.length === 0) {
-                this.hintLabel.string = "👈 请先选择要入驻的酒楼，并勾选要完成的卡牌";
+                this.hintLabel.string = "请先选择祭坛，再选择石板";
             } else {
                 if (needsLobster) {
                     if (visibleItemCount === 0) {
@@ -672,12 +722,9 @@ export class TributePopup extends Component {
     }
 
     private _onTributeChoiceRequired = (data: any) => {
-        console.log('🎁 收到服务器 tributeChoiceRequired 数据:', data);
         const payload = data.data || data;
-        console.log('🎁 parsed payload:', payload);
 
         if (payload.playerId !== this.player.id) {
-            console.log('❌ playerId 不匹配:', payload.playerId, 'vs', this.player.id);
             return;
         }
 
@@ -686,12 +733,6 @@ export class TributePopup extends Component {
         this.pendingChoiceType = payload.choiceType;
         this.choiceOptions = payload.options || [];
 
-        console.log('✅ 保存的选择信息:', {
-            taskId: this.pendingChoiceTaskId,
-            choiceType: this.pendingChoiceType,
-            options: this.choiceOptions
-        });
-
         if (this.btnConfirm && this.btnConfirm.node) this.btnConfirm.node.active = false;
         if (this.btnSkip && this.btnSkip.node) this.btnSkip.node.active = false;
 
@@ -699,7 +740,6 @@ export class TributePopup extends Component {
             this.waitingChoiceNode.active = true;
         }
 
-        // 先清空上一次生成的按钮，并显示容器
         if (this.choiceContainer) {
             this.choiceContainer.removeAllChildren();
             this.choiceContainer.active = true;
@@ -707,45 +747,20 @@ export class TributePopup extends Component {
 
         if (this.pendingChoiceType === 'buy_advanced_lobster') {
             this.waitingChoiceLabel.string = "🎁 上供触发效果：请选择购买高级龙虾的品级";
-            // 根据服务器发来的 options 动态生成对应按钮
             this.choiceOptions.forEach(opt => {
                 const cost = opt.grade === 'grade1' ? 3 : (opt.grade === 'grade2' ? 2 : 1);
-                // 自动生成按钮
                 this.createDynamicChoiceBtn(`花费${cost}金购买 ${GRADE_NAMES[opt.grade]}`, opt.grade, cost);
             });
         }
         else if (this.pendingChoiceType === 'discard_attack') {
             this.waitingChoiceLabel.string = "🎁 上供触发效果：请选择其他玩家弃置的资源类型";
-            // 自动生成按钮
             this.createDynamicChoiceBtn("弃置龙虾 🦞", "discard", "lobster");
             this.createDynamicChoiceBtn("弃置虾笼 🛒", "discard", "cage");
         }
-        // 💡 以后新增任何卡牌特效，只需加个 else if，调用 createDynamicChoiceBtn 即可！完全不用动编辑器面板！
-    }
-
-    public onBtnBuyGrade3Clicked() {
-        this._submitChoice('grade3', 1);
-    }
-
-    public onBtnBuyGrade2Clicked() {
-        this._submitChoice('grade2', 2);
-    }
-
-    public onBtnBuyGrade1Clicked() {
-        this._submitChoice('grade1', 3);
-    }
-
-    public onBtnDiscardLobsterClicked() {
-        this._submitChoice('discard', 'lobster');
-    }
-
-    public onBtnDiscardCageClicked() {
-        this._submitChoice('discard', 'cage');
     }
 
     private _submitChoice(action: string, gradeCost: number | string | null) {
         if (!this.pendingChoiceTaskId) {
-            console.error('❌ 没有待处理的选择任务 ID');
             return;
         }
 
@@ -763,8 +778,6 @@ export class TributePopup extends Component {
             choicePayload.grade = action;
             choicePayload.cost = gradeCost as number;
         }
-
-        console.log('📤 提交上供选择:', { taskId: this.pendingChoiceTaskId, choice: choicePayload });
 
         NetworkManager.instance.send('clientGameAction', 'areaAction', {
             payload: {
@@ -793,11 +806,9 @@ export class TributePopup extends Component {
                     if (this.pendingChoiceType === 'discard_attack') {
                         choice = { action: 'discard', targetType: 'lobster' };
                     } else if (this.pendingChoiceType === 'buy_advanced_lobster' && this.choiceOptions[0]) {
-                        // 默认选择第一个选项
                         choice = this.choiceOptions[0];
                         choice.action = choice.grade;
                     }
-                    console.log('🔄 重试上供选择:', { taskId: this.pendingChoiceTaskId, choice });
                     NetworkManager.instance.send('clientGameAction', 'areaAction', {
                         payload: {
                             actionType: 'submitTributeChoice',
@@ -814,7 +825,6 @@ export class TributePopup extends Component {
 
     protected onDestroy() {
         this._cleanup();
-        // 清空所有 pending 状态
         this.isWaitingChoice = false;
         this.pendingChoiceTaskId = null;
         this.pendingChoiceType = null;
