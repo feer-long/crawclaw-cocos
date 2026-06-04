@@ -1864,7 +1864,7 @@
         "__id__": 49
       }
     ],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 57
@@ -1877,7 +1877,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 0,
-      "y": -483.6,
+      "y": 0,
       "z": 0
     },
     "_lrot": {
@@ -1935,7 +1935,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 0,
-      "y": 0,
+      "y": -600,
       "z": 0
     },
     "_lrot": {
@@ -2266,14 +2266,14 @@
     "node": {
       "__id__": 48
     },
-    "_enabled": true,
+    "_enabled": false,
     "__prefab": null,
     "_alignFlags": 4,
     "_target": null,
     "_left": 0,
     "_right": 0,
     "_top": 0,
-    "_bottom": 0.1,
+    "_bottom": 0.4625187406296851,
     "_horizontalCenter": 0,
     "_verticalCenter": 0,
     "_isAbsLeft": true,

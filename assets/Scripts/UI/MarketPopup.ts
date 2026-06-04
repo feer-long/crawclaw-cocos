@@ -42,8 +42,10 @@ export class MarketPopup extends Component {
     public init(data: any) {
         this.rawData = data;
         this.actionCount = data.actionCount || 0;
-        this.currentCategory = 'lobster'; // 默认选中龙虾
-        this.isShowingHire = false;
+        if (!this.node.active) {
+            this.currentCategory = 'lobster';
+            this.isShowingHire = false;
+        }
 
         this.node.active = true;
 
