@@ -1,0 +1,134 @@
+{
+  "ver": "1.0.27",
+  "importer": "image",
+  "imported": true,
+  "uuid": "9ce649bc-e3e7-47a8-b44f-8e33a46e135b",
+  "files": [
+    ".json",
+    ".png"
+  ],
+  "subMetas": {
+    "6c48a": {
+      "importer": "texture",
+      "uuid": "9ce649bc-e3e7-47a8-b44f-8e33a46e135b@6c48a",
+      "displayName": "点将台",
+      "id": "6c48a",
+      "name": "texture",
+      "userData": {
+        "wrapModeS": "clamp-to-edge",
+        "wrapModeT": "clamp-to-edge",
+        "imageUuidOrDatabaseUri": "9ce649bc-e3e7-47a8-b44f-8e33a46e135b",
+        "isUuid": true,
+        "visible": false,
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "none",
+        "anisotropy": 0
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "f9941": {
+      "importer": "sprite-frame",
+      "uuid": "9ce649bc-e3e7-47a8-b44f-8e33a46e135b@f9941",
+      "displayName": "点将台",
+      "id": "f9941",
+      "name": "spriteFrame",
+      "userData": {
+        "trimThreshold": 1,
+        "rotated": false,
+        "offsetX": 4,
+        "offsetY": 1,
+        "trimX": 21,
+        "trimY": 21,
+        "width": 1007,
+        "height": 980,
+        "rawWidth": 1041,
+        "rawHeight": 1024,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "packable": true,
+        "pixelsToUnit": 100,
+        "pivotX": 0.5,
+        "pivotY": 0.5,
+        "meshType": 0,
+        "vertices": {
+          "rawPosition": [
+            -503.5,
+            -490,
+            0,
+            503.5,
+            -490,
+            0,
+            -503.5,
+            490,
+            0,
+            503.5,
+            490,
+            0
+          ],
+          "indexes": [
+            0,
+            1,
+            2,
+            2,
+            1,
+            3
+          ],
+          "uv": [
+            21,
+            1003,
+            1028,
+            1003,
+            21,
+            23,
+            1028,
+            23
+          ],
+          "nuv": [
+            0.020172910662824207,
+            0.0224609375,
+            0.9875120076849183,
+            0.0224609375,
+            0.020172910662824207,
+            0.9794921875,
+            0.9875120076849183,
+            0.9794921875
+          ],
+          "minPos": [
+            -503.5,
+            -490,
+            0
+          ],
+          "maxPos": [
+            503.5,
+            490,
+            0
+          ]
+        },
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "9ce649bc-e3e7-47a8-b44f-8e33a46e135b@6c48a",
+        "atlasUuid": "",
+        "trimType": "auto"
+      },
+      "ver": "1.0.12",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "type": "sprite-frame",
+    "fixAlphaTransparencyArtifacts": false,
+    "hasAlpha": true,
+    "redirect": "9ce649bc-e3e7-47a8-b44f-8e33a46e135b@6c48a"
+  }
+}

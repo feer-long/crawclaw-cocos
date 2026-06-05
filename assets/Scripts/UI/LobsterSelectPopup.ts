@@ -1,4 +1,4 @@
-import { _decorator, Component, Label, Button, Node, instantiate, Color, Sprite, UITransform, Layout } from 'cc';
+import { _decorator, Component, Label, Button, Node, instantiate, Color, Sprite, UITransform, Layout, SpriteFrame, Vec3 } from 'cc';
 import { NetworkManager } from '../Network/NetworkManager';
 const { ccclass, property } = _decorator;
 
@@ -15,6 +15,21 @@ export class LobsterSelectPopup extends Component {
     @property(Node) public itemTemplate: Node = null;
 
     @property(Button) public btnConfirm: Button = null;
+
+    @property({ type: SpriteFrame, tooltip: '0级金底框' }) public frameGold: SpriteFrame = null;
+    @property({ type: SpriteFrame, tooltip: '0级山海龙螯' }) public iconRoyal: SpriteFrame = null;
+
+    @property({ type: SpriteFrame, tooltip: '1级红底框' }) public frameRed: SpriteFrame = null;
+    @property({ type: SpriteFrame, tooltip: '1级祝融赤焰螯' }) public iconGrade1: SpriteFrame = null;
+
+    @property({ type: SpriteFrame, tooltip: '2级蓝底框' }) public frameBlue: SpriteFrame = null;
+    @property({ type: SpriteFrame, tooltip: '2级昆仑冰晶螯' }) public iconGrade2: SpriteFrame = null;
+
+    @property({ type: SpriteFrame, tooltip: '3级灰底框' }) public frameGrey: SpriteFrame = null;
+    @property({ type: SpriteFrame, tooltip: '3级磐石玄甲螯' }) public iconGrade3: SpriteFrame = null;
+
+    @property({ type: SpriteFrame, tooltip: '4级绿底框' }) public frameGreen: SpriteFrame = null;
+    @property({ type: SpriteFrame, tooltip: '4级幼型灵螯' }) public iconNormal: SpriteFrame = null;
 
     private currentBattle: any = null;
     private localPlayerId: number = -1;
@@ -34,15 +49,14 @@ export class LobsterSelectPopup extends Component {
             const stateStr = cc.sys.localStorage.getItem('localPlayerId');
             this.localPlayerId = stateStr ? parseInt(stateStr) : -1;
 
-            // 【新增】处理纯查看模式
             this.isViewOnly = (data.viewOnly === true);
             if (this.isViewOnly) {
                 this.isChallenger = false;
                 this.isDefender = false;
 
                 if (this.titleLabel) this.titleLabel.string = '';
-                if (this.vsLabel) this.vsLabel.string = `👀 正在查看 [${data.playerName}] 的龙虾图鉴`;
-                if (this.hintLabel) this.hintLabel.string = `共拥有 ${data.lobsters.length + (data.titles ? data.titles.length : 0)} 只龙虾/称号`;
+                if (this.vsLabel) this.vsLabel.string = `👀 正在查看 [${data.playerName}] 的灵螯图鉴`;
+                if (this.hintLabel) this.hintLabel.string = `共拥有 ${data.lobsters.length + (data.titles ? data.titles.length : 0)} 只灵螯/神器`;
                 if (this.btnConfirm) {
                     this.btnConfirm.node.active = true;
                     const btnLabel = this.btnConfirm.getComponentInChildren(Label);
@@ -55,7 +69,7 @@ export class LobsterSelectPopup extends Component {
 
                 if (this.lobsterScrollViewNode) this.lobsterScrollViewNode.active = true;
                 if (this.itemTemplate) this.itemTemplate.active = false;
-                this.renderLobsters(); // 直接渲染
+                this.renderLobsters();
                 return;
             }
 
@@ -72,15 +86,12 @@ export class LobsterSelectPopup extends Component {
             const pDefender = gameState?.players.find((p: any) => p.id === this.currentBattle.defenderId);
 
             if (pChallenger && pDefender && this.vsLabel) {
-                // ==========================================
-                // 【核心修复】：0,1,2 分别显示 1,2,3号，且绝对带有方括号！
-                // ==========================================
                 const slotNum = this.currentBattle.defenderSlot + 1;
                 this.vsLabel.string = `⚔️ ${pChallenger.name} [挑战方] VS ${pDefender.name} [防守方] ⚔️\n争夺 [${slotNum}号] 槽位`;
             }
 
             if (!this.isChallenger && !this.isDefender) {
-                if (this.hintLabel) this.hintLabel.string = "👀 观战中：正在等待双方挑选出战龙虾...";
+                if (this.hintLabel) this.hintLabel.string = "观战中：正在等待双方挑选出战灵螯...";
                 if (this.btnConfirm) this.btnConfirm.node.active = false;
                 if (this.lobsterScrollViewNode) this.lobsterScrollViewNode.active = false;
             } else {
@@ -139,21 +150,9 @@ export class LobsterSelectPopup extends Component {
                 viewTrans.height = svTrans.height;
                 contentTrans.width = svTrans.width;
             }
-
-            let layout = this.lobsterScrollViewContent.getComponent(Layout);
-            if (layout) {
-                layout.type = Layout.Type.GRID;
-                layout.resizeMode = Layout.ResizeMode.CONTAINER;
-                layout.startAxis = Layout.AxisDirection.HORIZONTAL;
-                layout.constraint = Layout.Constraint.FIXED_COL;
-                layout.constraintNum = 2;
-                layout.spacingX = 15;
-                layout.spacingY = 15;
-            }
         }
 
         this.lobsterScrollViewContent.removeAllChildren();
-
         this.itemNodes = [];
         this.selectedItemIndex = -1;
         this.myValidCount = 0;
@@ -165,11 +164,35 @@ export class LobsterSelectPopup extends Component {
             node.active = true;
             this.lobsterScrollViewContent.addChild(node);
 
+            const frameSprite = node.getComponent(Sprite);
+            const iconSprite = node.getChildByName('Sprite')?.getComponent(Sprite);
+
+            if (item.data.grade) {
+                let targetFrame = this.frameGreen;
+                let targetIcon = this.iconNormal;
+
+                switch (item.data.grade) {
+                    case 'royal':
+                        targetFrame = this.frameGold; targetIcon = this.iconRoyal; break;
+                    case 'grade1':
+                        targetFrame = this.frameRed; targetIcon = this.iconGrade1; break;
+                    case 'grade2':
+                        targetFrame = this.frameBlue; targetIcon = this.iconGrade2; break;
+                    case 'grade3':
+                        targetFrame = this.frameGrey; targetIcon = this.iconGrade3; break;
+                    case 'normal':
+                    default:
+                        targetFrame = this.frameGreen; targetIcon = this.iconNormal; break;
+                }
+
+                if (frameSprite && targetFrame) frameSprite.spriteFrame = targetFrame;
+                if (iconSprite && targetIcon) iconSprite.spriteFrame = targetIcon;
+            }
+
             const baseName = item.data.name || GRADE_NAMES[item.data.grade];
             const val = getGradeValue(item.data.grade) || 0;
 
             const isUsed = item.data.used === true;
-            // 【修改】如果是查看模式，所有龙虾都不置灰；否则按战斗规则过滤
             const canFight = this.isViewOnly ? true : (val >= 1 && !isUsed);
             if (canFight) this.myValidCount++;
 
@@ -194,46 +217,66 @@ export class LobsterSelectPopup extends Component {
     private refreshUI() {
         this.itemNodes.forEach((node, idx) => {
             const itemData = (node as any)._itemData;
-            const sprite = node.getComponent(Sprite);
+
             const btn = node.getComponent(Button);
+            const frameSprite = node.getComponent(Sprite);
 
             const allLabels = node.getComponentsInChildren(Label);
             let targetLabel = node.getChildByName('Label')?.getComponent(Label);
             if (!targetLabel && allLabels.length > 0) targetLabel = allLabels[0];
 
             let finalString = itemData.baseName;
+            let needsSmallFont = false;
+
+            // 【新增】定义文字的颜色变量，默认白色
+            let targetLabelColor = new Color(255, 255, 255, 255);
 
             if (!itemData.canFight) {
-                if (sprite) sprite.color = new Color(200, 200, 200, 150);
+                if (frameSprite) frameSprite.color = new Color(150, 150, 150, 200);
                 if (btn) btn.interactable = false;
 
-                // 【修改】战斗模式下才显示 (不够格) 等字样
+                // 不可用时，文字变灰
+                targetLabelColor = new Color(180, 180, 180, 255);
+
                 if (!this.isViewOnly) {
                     if (itemData.isUsed) {
                         finalString += '(已战)';
+                        needsSmallFont = true;
                     } else if (itemData.val < 1) {
                         finalString += '(不够格)';
+                        needsSmallFont = true;
                     }
                 }
             } else {
-                // 【修改】如果是纯查看模式，关掉可点击交互，不显示高亮
                 if (this.isViewOnly) {
                     if (btn) btn.interactable = false;
-                    if (sprite) sprite.color = new Color(255, 255, 255);
+                    if (frameSprite) frameSprite.color = new Color(255, 255, 255, 255);
                 } else {
                     if (btn) btn.interactable = true;
+
                     const isSelected = (idx === this.selectedItemIndex);
-                    if (sprite) sprite.color = isSelected ? new Color(255, 100, 100) : new Color(220, 240, 255);
+                    if (frameSprite) {
+                        frameSprite.color = isSelected ? new Color(255, 255, 200, 255) : new Color(255, 255, 255, 255);
+                    }
+                    node.setScale(isSelected ? new Vec3(1.05, 1.05, 1) : new Vec3(1, 1, 1));
+
+                    // 【新增】如果是选中状态，名字变为金色
+                    if (isSelected) {
+                        targetLabelColor = new Color(255, 215, 0, 255);
+                    }
                 }
             }
 
             allLabels.forEach(l => {
                 if (l === targetLabel) {
                     l.string = finalString;
+                    l.fontSize = needsSmallFont ? 30 : 50;
+                    l.lineHeight = needsSmallFont ? 30 : 50;
+                    // 【新增】应用颜色到名字 Label
+                    l.color = targetLabelColor;
                 } else if (l.node.name === 'EffectLabel' || l.node.name === 'DescLabel') {
                     l.string = itemData.skillDesc || "";
                 } else if (allLabels.length > 1 && l !== targetLabel) {
-                    // 如果没有明确命名的 Label，且有多个 Label，尝试把第二个作为描述
                     if (l.string === "" || l.string === finalString) {
                         l.string = itemData.skillDesc || "";
                     }
@@ -249,20 +292,17 @@ export class LobsterSelectPopup extends Component {
         const btnLabel = this.btnConfirm.getComponentInChildren(Label);
 
         if (this.myValidCount === 0) {
-            this.hintLabel.string = "❌ 你没有符合条件(3品以上且未战)的龙虾，只能认输";
+            this.hintLabel.string = "❌ 你没有符合条件(3级以上且未战)的灵螯，只能认输";
             this.btnConfirm.interactable = true;
-            this.btnConfirm.getComponent(Sprite).color = new Color(200, 100, 100);
-            if (btnLabel) btnLabel.string = "无出战龙虾 (点击判负)";
+            if (btnLabel) btnLabel.string = "无出战灵螯 (点击判负)";
         } else {
             if (this.selectedItemIndex === -1) {
-                this.hintLabel.string = "👇 请在下方选择要派遣出战的龙虾";
+                this.hintLabel.string = "👇 请在下方选择要派遣出战的灵螯";
                 this.btnConfirm.interactable = false;
-                this.btnConfirm.getComponent(Sprite).color = new Color(200, 200, 200);
-                if (btnLabel) btnLabel.string = "请选择龙虾";
+                if (btnLabel) btnLabel.string = "请选择灵螯";
             } else {
                 this.hintLabel.string = "✅ 已点将完毕，点击确认出击！";
                 this.btnConfirm.interactable = true;
-                this.btnConfirm.getComponent(Sprite).color = new Color(100, 200, 100);
                 if (btnLabel) btnLabel.string = "确认出战";
             }
         }
