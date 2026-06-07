@@ -198,6 +198,10 @@ export class GameView extends Component {
         const actionType = data.actionType;
         if (actionType === 'battleStart') {
             if (data.battleQueue) {
+                // 如果当前已有LobsterSelectPopup，不重新创建
+                if (this.currentPopupNode && this.currentPopupNode.isValid && this.currentPopupNode.name === 'LobsterSelectPopup') {
+                    return;
+                }
                 this.showBattlePopup('LobsterSelectPopup', this.lobsterSelectPopupPrefab, data);
             } else if (data.battleData) {
                 this.showBattlePopup('BattlePopup', this.battlePopupPrefab, data.battleData);
