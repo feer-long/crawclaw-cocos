@@ -15,18 +15,23 @@
       "server": "https://crawclaw-1312271570.cos.ap-shanghai.myqcloud.com/",
       "scenes": [
         {
+          "url": "db://assets/Scenes/Login.scene",
+          "uuid": "25f0493d-334b-4c02-8883-7f58d69f38b1"
+        },
+        {
           "url": "db://assets/remote_assets/Scenes/Game.scene",
           "uuid": "4339440d-9d98-423d-b9cf-bb8014931d45",
+          "bundle": "db://assets/remote_assets"
+        },
+        {
+          "url": "db://assets/remote_assets/Scenes/Loading.scene",
+          "uuid": "99604a80-930a-448b-be16-ca0813a97422",
           "bundle": "db://assets/remote_assets"
         },
         {
           "url": "db://assets/remote_assets/Scenes/Lobby.scene",
           "uuid": "fb7de785-3938-4c09-91db-de66cdf8b7e4",
           "bundle": "db://assets/remote_assets"
-        },
-        {
-          "url": "db://assets/Scenes/Login.scene",
-          "uuid": "25f0493d-334b-4c02-8883-7f58d69f38b1"
         },
         {
           "url": "db://assets/remote_assets/Scenes/Room.scene",

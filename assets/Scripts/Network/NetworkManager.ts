@@ -126,7 +126,14 @@ export class NetworkManager {
                     stateModified = true;
                 }
 
-                // 拦截 2：玩家资源更新
+                // 拦截 2：玩家资源变化量（处理后直接广播，不走后续逻辑）
+                if (serverEvent === 'playerResourceDelta' && innerData.playerId !== undefined && innerData.deltas) {
+                    this._applyResourceDelta(innerData.playerId, innerData.deltas);
+                    this.eventTarget.emit('playerResourceDelta', innerData);
+                    return;
+                }
+
+                // 拦截 3：玩家资源更新
                 const isResourceMsg = (serverEvent === 'playerResourceUpdate' || actionType === 'playerResourceUpdate');
                 const isWaitingUIMsg = (actionType === 'areaWaitingUI');
 
@@ -241,5 +248,45 @@ export class NetworkManager {
             }
         }
         return this.gameState;
+    }
+
+    private _applyResourceDelta(playerId: number, deltas: any) {
+        if (!this.gameState.players) return;
+        const player = this.gameState.players.find((p: any) => p.id == playerId);
+        if (!player) return;
+
+        for (const key in deltas) {
+            const value = deltas[key];
+            if (key === 'lobsters' && typeof value === 'object') {
+                // 龙虾变化: {grade: amount}
+                for (const grade in value) {
+                    const amount = value[grade];
+                    if (amount > 0) {
+                        for (let i = 0; i < amount; i++) {
+                            player.lobsters.push({ grade: grade, id: Date.now() + i });
+                        }
+                    } else {
+                        for (let i = 0; i < Math.abs(amount); i++) {
+                            const idx = player.lobsters.findIndex((l: any) => l.grade === grade);
+                            if (idx !== -1) player.lobsters.splice(idx, 1);
+                        }
+                    }
+                }
+            } else if (key === 'titleCards' && typeof value === 'object' && value.add) {
+                player.titleCards = player.titleCards || [];
+                player.titleCards.push(...value.add);
+            } else if (key === 'completedTasks' && typeof value === 'object' && value.add) {
+                player.completedTasks = player.completedTasks || [];
+                player.completedTasks.push(...value.add);
+            } else if (key === 'tavernCompletions' && typeof value === 'object' && value.set) {
+                player.tavernCompletions = player.tavernCompletions || {};
+                Object.assign(player.tavernCompletions, value.set);
+            } else if (typeof value === 'number') {
+                player[key] = (player[key] || 0) + value;
+            }
+        }
+
+        cc.sys.localStorage.setItem('currentGameState', JSON.stringify(this.gameState));
+        console.log(`✅ 已应用玩家 ${playerId} 的资源变化量`, deltas);
     }
 }

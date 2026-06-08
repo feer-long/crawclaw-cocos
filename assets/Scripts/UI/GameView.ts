@@ -20,6 +20,8 @@ export class GameView extends Component {
 
     @property(Label) public roundLabel: Label = null;
     @property(Label) public phaseLabel: Label = null;
+    @property(Node) public resourceDeltaContainer: Node = null;
+    @property(Label) public resourceDeltaLabel: Label = null;
 
     @property(Prefab) public slotShrimpPrefab: Prefab = null;
     @property(Prefab) public slotMarketPrefab: Prefab = null;
@@ -69,6 +71,9 @@ export class GameView extends Component {
         if (this.roundLabel?.node) {
             this.roundLabel.node.parent = topLayer;
         }
+        if (this.resourceDeltaContainer) {
+            this.resourceDeltaContainer.parent = topLayer;
+        }
         this.schedule(() => {
             if (topLayer.isValid && topLayer.parent) {
                 const siblings = topLayer.parent.children;
@@ -80,6 +85,7 @@ export class GameView extends Component {
 
         NetworkManager.instance.eventTarget.on('gameStateUpdate', this.onStateChanged, this);
         NetworkManager.instance.eventTarget.on('playerResourceUpdate', this.onStateChanged, this);
+        NetworkManager.instance.eventTarget.on('playerResourceDelta', this.onResourceDelta, this);
         NetworkManager.instance.eventTarget.on('serverGameAction', this.onStateChanged, this);
         NetworkManager.instance.eventTarget.on('error', this.onError, this);
         NetworkManager.instance.eventTarget.on('areaSettlementStart', this.onAreaSettlementStart, this);
@@ -105,6 +111,7 @@ export class GameView extends Component {
     onDestroy() {
         NetworkManager.instance.eventTarget.off('gameStateUpdate', this.onStateChanged, this);
         NetworkManager.instance.eventTarget.off('playerResourceUpdate', this.onStateChanged, this);
+        NetworkManager.instance.eventTarget.off('playerResourceDelta', this.onResourceDelta, this);
         NetworkManager.instance.eventTarget.off('serverGameAction', this.onStateChanged, this);
         NetworkManager.instance.eventTarget.off('error', this.onError, this);
         NetworkManager.instance.eventTarget.off('areaSettlementStart', this.onAreaSettlementStart, this);
@@ -243,6 +250,7 @@ export class GameView extends Component {
                 if (comp) (comp as any).init(data);
             }
         } else {
+            // 如果资源变化播报正在进行，不覆盖显示
             this.phaseLabel.string = '观战玩家正在下注，等待完成后进入战斗...';
             if (this.currentPopupNode && this.currentPopupNode.isValid && this.currentPopupNode.name === 'LobsterSelectPopup') {
                 this.currentPopupNode.destroy();
@@ -280,6 +288,89 @@ export class GameView extends Component {
                 this.onStateChanged();
             }
         }, 1500);
+    }
+
+    private onResourceDelta(data: any) {
+        if (!this.resourceDeltaContainer || !this.resourceDeltaLabel) return;
+
+        const { playerId, deltas } = data;
+        const gameState = NetworkManager.instance.getGameState();
+        const players = gameState?.players || [];
+        const player = players.find((p: any) => p.id == playerId);
+        const playerName = player?.name || `玩家${playerId}`;
+        const isSelf = playerId == this.localPlayerId;
+
+        const messages = this.formatDeltaMessages(deltas);
+        if (messages.length > 0) {
+            const prefix = isSelf ? '👤 ' : '';
+            const text = `${prefix}${playerName}: ${messages.join(', ')}`;
+
+            // 创建新的label节点
+            const labelNode = instantiate(this.resourceDeltaLabel.node);
+            const label = labelNode.getComponent(Label);
+            if (label) {
+                label.string = text;
+            }
+            this.resourceDeltaContainer.addChild(labelNode);
+
+            // 3秒后销毁
+            this.scheduleOnce(() => {
+                if (labelNode && labelNode.isValid) {
+                    labelNode.destroy();
+                }
+            }, 3);
+        }
+    }
+
+    private formatDeltaMessages(deltas: any): string[] {
+        const RESOURCE_NAMES: Record<string, string> = {
+            coins: '金币',
+            seaweed: '海草',
+            cages: '笼子',
+            de: '德',
+            wang: '望',
+            liZhang: '里长',
+            bonusPoints: '奖励分',
+            bonusGold: '奖励金币'
+        };
+
+        const messages: string[] = [];
+
+        for (const key in deltas) {
+            const value = deltas[key];
+            if (key === 'lobsters' && typeof value === 'object') {
+                for (const grade in value) {
+                    const amount = value[grade];
+                    if (amount !== 0) {
+                        const gradeName = this.getGradeName(grade);
+                        messages.push(`${gradeName}${amount > 0 ? '+' : ''}${amount}`);
+                    }
+                }
+            } else if (key === 'titleCards' && typeof value === 'object' && value.add) {
+                messages.push(`称号+${value.add.length}`);
+            } else if (key === 'completedTasks' && typeof value === 'object' && value.add) {
+                messages.push(`任务+${value.add.length}`);
+            } else if (key === 'tavernCompletions' && typeof value === 'object' && value.set) {
+                const count = Object.keys(value.set).length;
+                messages.push(`酒馆完成+${count}`);
+            } else if (typeof value === 'number' && value !== 0) {
+                const name = RESOURCE_NAMES[key] || key;
+                messages.push(`${name}${value > 0 ? '+' : ''}${value}`);
+            }
+        }
+
+        return messages;
+    }
+
+    private getGradeName(grade: string): string {
+        const GRADE_NAMES: Record<string, string> = {
+            'normal': '幼型灵螯',
+            'grade3': '磐石玄甲螯',
+            'grade2': '昆仑冰晶螯',
+            'grade1': '祝融赤焰螯',
+            'royal': '山海龙螯'
+        };
+        return GRADE_NAMES[grade] || grade;
     }
 
     private onAreaSettlementStart(data: any) {
