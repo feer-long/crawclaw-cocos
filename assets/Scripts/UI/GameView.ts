@@ -505,7 +505,8 @@ if (this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !
         if (this.playerStatusManager) {
             this.playerStatusManager.refreshData(players, this.localPlayerId);
         }
-        const isMyTurn = (gameState.currentPlayerIndex == this.localPlayerId) && (gameState.phase === 'placement');
+        const currentPlayer = players[gameState.currentPlayerIndex];
+        const isMyTurn = currentPlayer && (currentPlayer.id == this.localPlayerId) && (gameState.phase === 'placement');
 
         const me = players.find((p: any) => p.id == this.localPlayerId);
         let myLiZhang = 0;
@@ -551,7 +552,8 @@ if (this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !
                     if (nextBtnComp) nextBtnComp.interactable = false;
                 }
             } else if (gameState.phase === 'placement') {
-                this.phaseLabel.string = `(⏳ 等待 玩家 ${gameState.currentPlayerIndex} 行动...)`;
+                const waitingPlayer = players[gameState.currentPlayerIndex];
+                this.phaseLabel.string = waitingPlayer ? `(⏳ 等待 ${waitingPlayer.name} 行动...)` : `(⏳ 等待玩家行动...)`;
                 if (nextBtnComp) nextBtnComp.interactable = false;
             }
         }
