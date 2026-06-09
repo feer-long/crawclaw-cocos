@@ -264,7 +264,7 @@ export class WeChatAdapter {
         }
     }
 
-    private _apiBaseUrl: string = `https://${Config.API_HOST}`;
+    private _apiBaseUrl: string = Config.API_BASE_URL;
 
     public getOpenId(callback: (openId: string | null) => void): void {
         if (!this.isWeChatEnvironment()) {

@@ -102,7 +102,7 @@ export class LoginView extends Component {
         console.log(`玩家 ${nickname} 准备连接大厅...`);
 
         NetworkManager.instance.connect(
-            `wss://${Config.API_HOST}/ws/lobby`,
+            Config.WS_LOBBY_URL,
             () => {
                 console.log("连接大厅成功，准备切换场景...");
                 console.log("准备下载远程资源并切换到加载页...");
@@ -169,7 +169,7 @@ export class LoginView extends Component {
         console.log(`玩家 ${playerName} 准备连接大厅...`);
 
         NetworkManager.instance.connect(
-            `wss://${Config.API_HOST}/ws/lobby`,
+            Config.WS_LOBBY_URL,
             () => {
                 console.log("连接大厅成功，准备切换场景...");
                 console.log("准备下载远程资源并切换到加载页...");

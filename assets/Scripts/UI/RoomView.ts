@@ -87,7 +87,7 @@ export class RoomView extends Component {
         // 【关键修复：断开大厅，连接房间专属 WebSocket】
         // 只有 userId 匹配到房间玩家时才连接游戏 WS
         if (roomId && this.localPlayerId !== -1) {
-            const roomWsUrl = `wss://${Config.API_HOST}/ws/${roomId}/${this.localPlayerId}`;
+            const roomWsUrl = `${Config.WS_ROOM_URL}/${roomId}/${this.localPlayerId}`;
             console.log("正在切换到房间专属通信通道...", roomWsUrl);
 
             // NetworkManager 内部会自动 close 掉旧的大厅连接，建立新连接
