@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, ScrollView, Vec3, UITransform, Sprite, Color } from 'cc';
+import { _decorator, Component, Node, ScrollView, Vec3, UITransform, Sprite, Color, SpriteFrame, Button } from 'cc';
 const { ccclass, property } = _decorator;
 
 @ccclass('ScrollPageView')
@@ -12,6 +12,12 @@ export class ScrollPageView extends Component {
 
     @property
     scrollTime: number = 0.4;   // 自动滚动动画时长
+
+    @property([SpriteFrame])
+    activeSpriteFrames: SpriteFrame[] = [];    // 选中状态背景图数组（对应每个按钮）
+
+    @property([SpriteFrame])
+    inactiveSpriteFrames: SpriteFrame[] = [];  // 未选中状态背景图数组（对应每个按钮）
 
     private currentPage: number = 0;
     private pageWidth: number = 0;
@@ -126,6 +132,15 @@ export class ScrollPageView extends Component {
                 sprite.color = (index === activeIndex) 
                     ? new Color(255, 255, 255, 255) 
                     : new Color(128, 128, 128, 255);
+            }
+            
+            const button = btn.getComponent(Button);
+            if (button) {
+                if (index === activeIndex && this.activeSpriteFrames[index]) {
+                    button.normalSprite = this.activeSpriteFrames[index];
+                } else if (this.inactiveSpriteFrames[index]) {
+                    button.normalSprite = this.inactiveSpriteFrames[index];
+                }
             }
         });
     }
