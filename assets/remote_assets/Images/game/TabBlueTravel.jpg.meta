@@ -1,0 +1,134 @@
+{
+  "ver": "1.0.27",
+  "importer": "image",
+  "imported": true,
+  "uuid": "9ee1d32d-b2cf-467c-94cb-01269477d72b",
+  "files": [
+    ".jpg",
+    ".json"
+  ],
+  "subMetas": {
+    "6c48a": {
+      "importer": "texture",
+      "uuid": "9ee1d32d-b2cf-467c-94cb-01269477d72b@6c48a",
+      "displayName": "TabBlueTravel",
+      "id": "6c48a",
+      "name": "texture",
+      "userData": {
+        "wrapModeS": "clamp-to-edge",
+        "wrapModeT": "clamp-to-edge",
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "none",
+        "anisotropy": 0,
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "9ee1d32d-b2cf-467c-94cb-01269477d72b",
+        "visible": false
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "f9941": {
+      "importer": "sprite-frame",
+      "uuid": "9ee1d32d-b2cf-467c-94cb-01269477d72b@f9941",
+      "displayName": "TabBlueTravel",
+      "id": "f9941",
+      "name": "spriteFrame",
+      "userData": {
+        "trimThreshold": 1,
+        "rotated": false,
+        "offsetX": 13,
+        "offsetY": 30.5,
+        "trimX": 235,
+        "trimY": 8,
+        "width": 1556,
+        "height": 1013,
+        "rawWidth": 2000,
+        "rawHeight": 1090,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "packable": true,
+        "pixelsToUnit": 100,
+        "pivotX": 0.5,
+        "pivotY": 0.5,
+        "meshType": 0,
+        "vertices": {
+          "rawPosition": [
+            -778,
+            -506.5,
+            0,
+            778,
+            -506.5,
+            0,
+            -778,
+            506.5,
+            0,
+            778,
+            506.5,
+            0
+          ],
+          "indexes": [
+            0,
+            1,
+            2,
+            2,
+            1,
+            3
+          ],
+          "uv": [
+            235,
+            1082,
+            1791,
+            1082,
+            235,
+            69,
+            1791,
+            69
+          ],
+          "nuv": [
+            0.1175,
+            0.06330275229357799,
+            0.8955,
+            0.06330275229357799,
+            0.1175,
+            0.9926605504587156,
+            0.8955,
+            0.9926605504587156
+          ],
+          "minPos": [
+            -778,
+            -506.5,
+            0
+          ],
+          "maxPos": [
+            778,
+            506.5,
+            0
+          ]
+        },
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "9ee1d32d-b2cf-467c-94cb-01269477d72b@6c48a",
+        "atlasUuid": "",
+        "trimType": "auto"
+      },
+      "ver": "1.0.12",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "type": "sprite-frame",
+    "fixAlphaTransparencyArtifacts": false,
+    "hasAlpha": true,
+    "redirect": "9ee1d32d-b2cf-467c-94cb-01269477d72b@6c48a"
+  }
+}

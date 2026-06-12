@@ -6403,7 +6403,7 @@
         "__expectedType__": "cc.SpriteFrame"
       },
       {
-        "__uuid__": "d90da6c4-30c7-46ec-98cd-c40b3e69be2e@f9941",
+        "__uuid__": "a107e5a3-7568-498a-8635-242c59bd8a9d@f9941",
         "__expectedType__": "cc.SpriteFrame"
       }
     ],
@@ -7235,11 +7235,11 @@
       "__expectedType__": "cc.SpriteFrame"
     },
     "_hoverSprite": {
-      "__uuid__": "d90da6c4-30c7-46ec-98cd-c40b3e69be2e@f9941",
+      "__uuid__": "9ee1d32d-b2cf-467c-94cb-01269477d72b@f9941",
       "__expectedType__": "cc.SpriteFrame"
     },
     "_pressedSprite": {
-      "__uuid__": "d90da6c4-30c7-46ec-98cd-c40b3e69be2e@f9941",
+      "__uuid__": "9ee1d32d-b2cf-467c-94cb-01269477d72b@f9941",
       "__expectedType__": "cc.SpriteFrame"
     },
     "_disabledSprite": {
