@@ -2,7 +2,7 @@ function isIP(host: string): boolean {
     return /^\d{1,3}(\.\d{1,3}){3}(:\d+)?$/.test(host);
 }
 
-const API_HOST = "crawclaw-257976-7-1318258869.sh.run.tcloudbase.com";
+const API_HOST = "121.4.62.126";
 const wsProto = isIP(API_HOST) ? "ws" : "wss";
 const httpProto = isIP(API_HOST) ? "http" : "https";
 

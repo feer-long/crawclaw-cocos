@@ -23,20 +23,20 @@ export class PlayerInfoItem extends Component {
         this.playerName.string = isSelf ? `👤 ${data.name}` : data.name;
 
         // 对应服务端的数据字段
-        this.attrLabel.string = `德:${data.de} | 望:${data.wang} | 里长:${data.liZhang}`;
-        this.resourceLabel.string = `💰:${data.coins} | 🌿:${data.seaweed} | 🛒:${data.cages}`;
+        this.attrLabel.string = `德:${data.de} | 望:${data.wang} | 客:${data.liZhang}`;
+        this.resourceLabel.string = `金:${data.coins} | 草:${data.seaweed} | 鼎:${data.cages}`;
         const tributeCards = data.tributeCards || [];
         const lobsters = data.lobsters || [];
         const titles = data.titleCards || [];
 
-        this.tributeCount.string = `卡:${tributeCards.length}`;
-        this.lobsterCount.string = `虾:${lobsters.length + titles.length}`;
+        this.tributeCount.string = `上供卡:${tributeCards.length}`;
+        this.lobsterCount.string = `灵鳌:${lobsters.length + titles.length}`;
 
         // 计算预估得分
         const gameState = NetworkManager.instance.getGameState();
         const scoreInfo = calculateEstimatedScore(data, gameState);
         if (this.scoreLabel) {
-            this.scoreLabel.string = `总分预估:${scoreInfo.total}分`;
+            this.scoreLabel.string = `总分预估:${scoreInfo.total}`;
         }
 
         // 绑定点击事件：通过全局事件总线通知 GameView 弹出详情
