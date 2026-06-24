@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Prefab, instantiate, Vec3, tween, Label } from 'cc';
+import { _decorator, Component, Node, Prefab, instantiate, Vec3, tween, Label, UITransform } from 'cc';
 import { PlayerInfoItem } from './PlayerInfoItem';
 const { ccclass, property } = _decorator;
 
@@ -10,35 +10,83 @@ export class PlayerStatusManager extends Component {
     @property(Label) toggleBtnLabel: Label = null;
 
     private _isExpanded: boolean = false;
-    private _hiddenY: number = -795;
-    private _showY: number = -520;
+    private _hiddenY: number = 0;
+    private _showY: number = 0;
+    private _toggleBtnY: number = 0;
 
     start() {
-        // 初始位置设置
-        const pos = this.node.position;
-        this.node.setPosition(pos.x, this._hiddenY, pos.z);
+        this.calcPositions();
+        this.node.setPosition(this.node.position.x, this._hiddenY, this.node.position.z);
 
-        // 【新增】：初始化时强制刷新一次文字，防止编辑器里是空的
+        const btnNode = this.toggleBtnLabel?.node.parent;
+        if (btnNode) {
+            btnNode.setPosition(btnNode.position.x, this._toggleBtnY, btnNode.position.z);
+        }
+
+        this.listContent.active = false;
+
         if (this.toggleBtnLabel) {
-            this.toggleBtnLabel.node.active = true; // 确保节点开启
-            this.toggleBtnLabel.string = "玩家状态 ▲";
+            this.toggleBtnLabel.node.active = true;
+            this.toggleBtnLabel.string = "玩家资源 ▲";
         } else {
             console.error("警告：toggleBtnLabel 未在编辑器中关联！");
         }
+    }
+
+    private calcPositions() {
+        const parentTrans = this.node.parent?.getComponent(UITransform);
+        const canvasH = parentTrans ? parentTrans.height : 1334;
+        const panelBodyH = canvasH * 0.30;
+
+        const panelBodyTrans = this.panelBody.getComponent(UITransform);
+        if (panelBodyTrans) {
+            panelBodyTrans.height = panelBodyH;
+        }
+
+        const scrollView = this.panelBody.getChildByName('ScrollView');
+        if (scrollView) {
+            const svTrans = scrollView.getComponent(UITransform);
+            if (svTrans) {
+                svTrans.height = panelBodyH;
+            }
+            const viewNode = scrollView.getChildByName('view');
+            if (viewNode) {
+                const viewTrans = viewNode.getComponent(UITransform);
+                if (viewTrans) {
+                    viewTrans.height = panelBodyH
+                    viewNode.setPosition(viewNode.position.x, 0, viewNode.position.z);
+                }
+            }
+        }
+
+        const btnNode = this.toggleBtnLabel?.node.parent;
+        const btnH = btnNode?.getComponent(UITransform)?.height ?? 80;
+        this._toggleBtnY = panelBodyH / 2 - btnH / 3;
+
+        this._hiddenY = -canvasH / 2 + canvasH * 0.15 - panelBodyH / 2;
+        this._showY = -canvasH / 2 + panelBodyH / 2;
     }
 
     public togglePanel() {
         this._isExpanded = !this._isExpanded;
         const targetY = this._isExpanded ? this._showY : this._hiddenY;
 
-        // 如果绑定了文字，自动修改箭头方向
         if (this.toggleBtnLabel) {
-            this.toggleBtnLabel.string = this._isExpanded ? "收起面板 ▼" : "玩家状态 ▲";
+            this.toggleBtnLabel.string = this._isExpanded ? "收起面板 ▼" : "玩家资源 ▲";
         }
+
+        this.listContent.active = this._isExpanded;
 
         tween(this.node)
             .to(0.3, { position: new Vec3(0, targetY, 0) }, { easing: 'quintOut' })
             .start();
+
+        if (this.toggleBtnLabel) {
+            const btnNode = this.toggleBtnLabel.node.parent;
+            tween(btnNode)
+                .to(0.3, { position: new Vec3(btnNode.position.x, this._toggleBtnY, 0) }, { easing: 'quintOut' })
+                .start();
+        }
     }
 
     // 由 GameView 的 refreshUI 自动调用

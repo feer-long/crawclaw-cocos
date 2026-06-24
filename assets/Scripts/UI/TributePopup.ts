@@ -66,6 +66,7 @@ export class TributePopup extends Component {
     private isNakedTribute: boolean = false;
     private rewardChoice: 'de' | 'wang' = 'de';
     private bonusChoice: 'de' | 'wang' = 'de';
+    private isConfirmed: boolean = false;
 
     // 依然用数组存起来方便 refreshUI 统一管理颜色
     private tavernGroupNodes: Node[] = [];
@@ -89,6 +90,7 @@ export class TributePopup extends Component {
         this.bonusChoice = 'de';
         this.reqLobsterCount = 0;
         this.isWaitingChoice = false;
+        this.isConfirmed = false;
         this.pendingChoiceTaskId = null;
         this.pendingChoiceType = null;
         this.choiceOptions = [];
@@ -414,6 +416,8 @@ export class TributePopup extends Component {
             (node as any)._itemData = { id: item.id, val: val, originalIndex: item.originalIndex, isTitle: !item.data.grade };
 
             node.on(Button.EventType.CLICK, () => {
+                if (this.isConfirmed) return;
+                
                 const idxInSelected = this.selectedItemIds.indexOf(item.id);
                 if (idxInSelected > -1) {
                     this.selectedItemIds.splice(idxInSelected, 1);
@@ -669,6 +673,7 @@ export class TributePopup extends Component {
     }
 
     public onBtnConfirmClicked() {
+        this.isConfirmed = true;
         this.btnConfirm.interactable = false;
 
         if (!this.isNakedTribute) {

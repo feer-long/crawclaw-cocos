@@ -2,6 +2,7 @@ import { _decorator, Component, Label, Node, Color, director, Button, assetManag
 import { Config } from '../Config';
 import { calculateEstimatedScore } from '../Data/GameConstants';
 import { WeChatAdapter } from '../WeChat/WeChatAdapter';
+import { NetworkManager } from '../Network/NetworkManager';
 const { ccclass, property } = _decorator;
 
 @ccclass('ResultPopup')
@@ -223,9 +224,14 @@ export class ResultPopup extends Component {
     }
 
     public onBtnReturnClicked() {
+        sys.localStorage.removeItem('currentRoomId');
+        sys.localStorage.removeItem('localPlayerId');
+        sys.localStorage.removeItem('initialRoomState');
         sys.localStorage.removeItem('currentGameState');
         sys.localStorage.removeItem('myLastPlacedArea');
         sys.localStorage.removeItem('myLastPlacedSlot');
+        NetworkManager.instance.disconnect();
+        NetworkManager.instance.ensureLobbyConnection();
         assetManager.loadBundle('remote_assets', (err, bundle) => {
             if (err) return console.error(err);
             bundle.loadScene('Lobby', (err, sceneAsset) => {

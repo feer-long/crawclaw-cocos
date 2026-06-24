@@ -43,11 +43,16 @@ export class LobsterSelectPopup extends Component {
 
     private myValidCount: number = 0;
     private oppValidCount: number = 0;
+    private isConfirmed: boolean = false;
 
     public init(data: any) {
         try {
             const stateStr = cc.sys.localStorage.getItem('localPlayerId');
             this.localPlayerId = stateStr ? parseInt(stateStr) : -1;
+            this.isConfirmed = false;
+
+            // 监听lobsterSelected消息
+            NetworkManager.instance.eventTarget.on('lobsterSelected', this._onLobsterSelected, this);
 
             this.isViewOnly = (data.viewOnly === true);
             if (this.isViewOnly) {
@@ -202,6 +207,7 @@ export class LobsterSelectPopup extends Component {
 
             if (!this.isViewOnly) {
                 node.on(Button.EventType.CLICK, () => {
+                    if (this.isConfirmed) return;
                     if (!canFight) return;
                     this.selectedItemIndex = i;
                     this.refreshUI();
@@ -316,6 +322,7 @@ export class LobsterSelectPopup extends Component {
             return;
         }
 
+        this.isConfirmed = true;
         this.btnConfirm.interactable = false;
 
         if (this.myValidCount === 0) {
@@ -364,5 +371,26 @@ export class LobsterSelectPopup extends Component {
             lobster: selectedItem.data,
             spectators: spectatorIds
         });
+    }
+
+    private _onLobsterSelected(data: any) {
+        // 如果是自己选择的，保持当前状态
+        if (data.playerId === this.localPlayerId) {
+            return;
+        }
+
+        // 更新对手已选择的状态显示
+        if (this.hintLabel) {
+            this.hintLabel.string = "✅ 对手已选择灵螯，等待战斗开始...";
+        }
+
+        // 禁用确认按钮，防止重复选择
+        if (this.btnConfirm) {
+            this.btnConfirm.interactable = false;
+        }
+    }
+
+    protected onDestroy() {
+        NetworkManager.instance.eventTarget.off('lobsterSelected', this._onLobsterSelected, this);
     }
 }
