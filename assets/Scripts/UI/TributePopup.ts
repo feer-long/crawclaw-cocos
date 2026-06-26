@@ -132,7 +132,7 @@ export class TributePopup extends Component {
         });
     }
 
-    private createDynamicChoiceBtn(btnText: string, action: string, costOrTarget: any) {
+    private createDynamicChoiceBtn(btnText: string, action: string, costOrTarget: any, interactable: boolean = true) {
         if (!this.choiceBtnTemplate || !this.choiceContainer) return;
 
         const btnNode = instantiate(this.choiceBtnTemplate);
@@ -140,6 +140,9 @@ export class TributePopup extends Component {
 
         const label = btnNode.getComponentInChildren(Label);
         if (label) label.string = btnText;
+
+        const btn = btnNode.getComponent(Button);
+        if (btn) btn.interactable = interactable;
 
         btnNode.on(Button.EventType.CLICK, () => {
             this._submitChoice(action, costOrTarget);
@@ -754,7 +757,8 @@ export class TributePopup extends Component {
             this.waitingChoiceLabel.string = "🎁 上供触发效果：请选择购买高级龙虾的品级";
             this.choiceOptions.forEach(opt => {
                 const cost = opt.grade === 'grade1' ? 3 : (opt.grade === 'grade2' ? 2 : 1);
-                this.createDynamicChoiceBtn(`花费${cost}金购买 ${GRADE_NAMES[opt.grade]}`, opt.grade, cost);
+                const canAfford = this.player.coins >= cost;
+                this.createDynamicChoiceBtn(`花费${cost}金购买 ${GRADE_NAMES[opt.grade]}`, opt.grade, cost, canAfford);
             });
         }
         else if (this.pendingChoiceType === 'discard_attack') {
@@ -804,6 +808,11 @@ export class TributePopup extends Component {
     }
 
     private _onError = (data: any) => {
+        if (data.message && data.message.indexOf('金币不足') !== -1 && this.isWaitingChoice) {
+            this.waitingChoiceLabel.string = "⚠️ 金币不足，购买取消";
+            this._hideChoiceUI();
+            return;
+        }
         if (data.code === 'DUPLICATE_REQUEST' && this.pendingChoiceTaskId) {
             setTimeout(() => {
                 if (this.pendingChoiceTaskId && this.pendingChoiceType && this.choiceOptions) {

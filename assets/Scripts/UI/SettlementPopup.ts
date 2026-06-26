@@ -1,4 +1,4 @@
-import { _decorator, Component, Label, Node } from 'cc';
+import { _decorator, Component, Label, Node, Button } from 'cc';
 import { NetworkManager } from '../Network/NetworkManager';
 const { ccclass, property } = _decorator;
 
@@ -103,8 +103,16 @@ export class SettlementPopup extends Component {
         const closeLabel = this.btnClose.getComponentInChildren(Label);
         if (closeLabel) closeLabel.string = "放弃选择";
 
+        // 检查玩家资源是否足够
+        const gameState = NetworkManager.instance.getGameState();
+        const pIdStr = cc.sys.localStorage.getItem('localPlayerId');
+        const localPlayerId = pIdStr ? parseInt(pIdStr) : -1;
+        const me = gameState?.players?.find((p: any) => p.id == localPlayerId);
+        const currentResource = me ? (me[card.costResourceType] || 0) : 0;
+
         // 复用按钮显示 3 个选项
         const btnList = [this.btnConfirm, this.btnChooseLobster, this.btnChooseSeaweed];
+        let hasAffordable = false;
         choices.forEach((choice: any, idx: number) => {
             if (idx < btnList.length) {
                 const btn = btnList[idx];
@@ -114,7 +122,12 @@ export class SettlementPopup extends Component {
                 if (label) {
                     label.string = `消耗 ${choice.cost}${resType} ➜ 奖励 ${choice.reward} 德/望`;
                 }
-                
+
+                const canAfford = currentResource >= choice.cost;
+                if (canAfford) hasAffordable = true;
+                const btnComp = btn.getComponent(Button);
+                if (btnComp) btnComp.interactable = canAfford;
+
                 // 重新绑定点击事件
                 btn.off(Node.EventType.TOUCH_END);
                 btn.on(Node.EventType.TOUCH_END, () => {
@@ -122,6 +135,10 @@ export class SettlementPopup extends Component {
                 }, this);
             }
         });
+
+        if (!hasAffordable && choices.length > 0) {
+            this.resultLabel.string = `⚠️ 你的${resType}不足以支付任何选项，请点击"放弃选择"跳过`;
+        }
     }
 
     private _sendEndgameChoice(idx: number) {
