@@ -1,4 +1,4 @@
-import { _decorator, Component, Label, Node, Color, director, Button, assetManager, instantiate, Layout, sys, game, Sprite, ImageAsset, Texture2D, SpriteFrame } from 'cc';
+import { _decorator, Component, Label, Node, Color, director, Button, assetManager, instantiate, Layout, sys, game, Sprite, ImageAsset, Texture2D, SpriteFrame, tween, Vec3 } from 'cc';
 import { Config } from '../Config';
 import { calculateEstimatedScore } from '../Data/GameConstants';
 import { WeChatAdapter } from '../WeChat/WeChatAdapter';
@@ -97,60 +97,149 @@ export class ResultPopup extends Component {
             return false;
         });
 
-        this.listContent.removeAllChildren();
+        // 隐藏模板
         if (this.itemTemplate) this.itemTemplate.active = false;
 
-        results.forEach((res, index) => {
-            const node = instantiate(this.itemTemplate);
-            node.active = true;
-            this.listContent.addChild(node);
+        // 获取场景中固定的4个玩家容器
+        const containers = [
+            this.listContent.getChildByName('TopContainer'),
+            this.listContent.getChildByName('SecondContainer'),
+            this.listContent.getChildByName('ThirdContainer'),
+            this.listContent.getChildByName('FourthContainer')
+        ];
 
-            const topContainer = node.getChildByName('TopContainer') || node;
-            const rankLabel = topContainer.getChildByName('RankLabel')?.getComponent(Label);
-            const nameLabel = topContainer.getChildByName('NameLabel')?.getComponent(Label);
-            const scoreLabel = topContainer.getChildByName('ScoreLabel')?.getComponent(Label);
+        // 遍历更新UI
+        containers.forEach((container, index) => {
+            if (!container) return;
 
-            const detailLabel = topContainer.getChildByName('DetailLabel')?.getComponent(Label)
-                || topContainer.getChildByName('SummaryLabel')?.getComponent(Label);
+            // 根据实际玩家数量决定显隐
+            if (index < results.length) {
+                container.active = true;
+                const res = results[index];
 
-            const btnExpand = topContainer.getChildByName('BtnExpand')?.getComponent(Button);
-            const arrowLabel = btnExpand?.node.getComponentInChildren(Label);
+                // 绑定基础信息节点
+                const nameLabel = container.getChildByName('NameLabel')?.getComponent(Label);
+                const scoreLabel = container.getChildByName('ScoreLabel')?.getComponent(Label);
+                const detailLabel = container.getChildByName('DetailLabel')?.getComponent(Label);
+                const spritePlayer = container.getChildByName('Sprite_player')?.getComponent(Sprite);
+                const btnExpand = container.getChildByName('BtnExpand');
 
-            const detailsContainer = node.getChildByName('DetailsContainer');
-            const detailCore = detailsContainer?.getChildByName('DetailCore')?.getComponent(Label);
-            const detailTavern = detailsContainer?.getChildByName('DetailTavern')?.getComponent(Label);
-            const detailRes = detailsContainer?.getChildByName('DetailRes')?.getComponent(Label);
+                // 赋值微信昵称和总分
+                if (nameLabel) nameLabel.string = res.player.name || `玩家${index + 1}`;
+                if (scoreLabel) scoreLabel.string = `${res.total} 分`;
 
-            if (rankLabel) {
-                rankLabel.string = `第 ${index + 1} 名`;
-                if (index === 0) rankLabel.color = new Color(255, 215, 0);
-                else if (index === 1) rankLabel.color = new Color(200, 230, 255);
-                else if (index === 2) rankLabel.color = new Color(255, 184, 115);
-                else rankLabel.color = new Color(255, 255, 255);
+                // 赋值微信头像
+                if (spritePlayer && res.player.avatarUrl) {
+                    this.loadWeChatAvatar(res.player.avatarUrl, spritePlayer);
+                }
+
+                // 根据名次赋予不同格式的简略小分文本
+                if (detailLabel) {
+                    if (index === 0) {
+                        detailLabel.string = `运道：${res.core} | 席位：${res.tavern} | 资源：${res.res}`;
+                    } else {
+                        detailLabel.string = `运:${res.core} | 席:${res.tavern} | 资:${res.res}`;
+                    }
+                }
+
+                // 绑定展开按钮交互逻辑
+                if (btnExpand) {
+                    btnExpand.off(Button.EventType.CLICK);
+
+                    let isExpanded = false;
+                    let activeDetailNode: Node = null;
+
+                    btnExpand.on(Button.EventType.CLICK, () => {
+                        isExpanded = !isExpanded;
+
+                        // 旋转动画 (顺时针 -90 度，恢复 0 度)
+                        tween(btnExpand)
+                            .to(0.2, { eulerAngles: new Vec3(0, 0, isExpanded ? -90 : 0) })
+                            .start();
+
+                        if (isExpanded) {
+                            // 展开：实例化并插入详情节点
+                            const detailPrefab = this.itemTemplate.getChildByName('DetailsContainer');
+                            if (!detailPrefab) return;
+
+                            activeDetailNode = instantiate(detailPrefab);
+                            activeDetailNode.active = true;
+
+                            // ==========================================
+                            // 精准寻找多 Label 节点的逻辑修改部分
+                            // ==========================================
+
+                            // 1. 运道：核心乘积分
+                            const spriteYundao = activeDetailNode.getChildByName('Sprite_yundao');
+                            if (spriteYundao) {
+                                const detailCore = spriteYundao.getChildByName('DetailCore')?.getComponent(Label);
+                                const coreScore = spriteYundao.getChildByName('CoreScore')?.getComponent(Label);
+                                if (detailCore) detailCore.string = `核心乘积分 =（运${res.deVal}*道${res.wangVal}=${res.core}分）`;
+                                if (coreScore) coreScore.string = `+${res.core}分`;
+                            }
+
+                            // 2. 席位：上供席位分
+                            const spriteXiwei = activeDetailNode.getChildByName('Sprite_xiwei');
+                            if (spriteXiwei) {
+                                const detailTavern = spriteXiwei.getChildByName('DetailTavern')?.getComponent(Label);
+                                const tavernScore = spriteXiwei.getChildByName('TavernScore')?.getComponent(Label);
+                                if (detailTavern) detailTavern.string = `上供席位分=（${res.tavernList.length > 0 ? res.tavernList.join('+') : '0'}=${res.tavern}分）`;
+                                if (tavernScore) tavernScore.string = `+${res.tavern}分`;
+                            }
+
+                            // 3. 资源：资源转换分 (DetailRes_begin 为固定文字，不修改)
+                            const spriteZiyuan = activeDetailNode.getChildByName('Sprite_ziyuan');
+                            if (spriteZiyuan) {
+                                const detailRes = spriteZiyuan.getChildByName('DetailRes')?.getComponent(Label);
+                                const resScore = spriteZiyuan.getChildByName('ResScore')?.getComponent(Label);
+                                if (detailRes) detailRes.string = `（贝币折算${res.coinsScore}+仙草折算${res.seaweedScore}+灵鼎折算${res.cagesScore}+灵螯折算${res.lobstersScore}=${res.res}分）`;
+                                if (resScore) resScore.string = `+${res.res}分`;
+                            }
+
+                            // 4. 总计 (DetailTotal 为固定文字，不修改)
+                            const spriteTotal = activeDetailNode.getChildByName('Sprite_total');
+                            if (spriteTotal) {
+                                const totalScore = spriteTotal.getChildByName('TotalScore')?.getComponent(Label);
+                                if (totalScore) totalScore.string = `${res.total}分`; // 注意这里没有“+”号
+                            }
+
+                            // 动态插入到当前玩家容器的正下方
+                            const currentIdx = container.getSiblingIndex();
+                            this.listContent.insertChild(activeDetailNode, currentIdx + 1);
+
+                        } else {
+                            // 收起：销毁详情节点
+                            if (activeDetailNode && activeDetailNode.isValid) {
+                                activeDetailNode.removeFromParent();
+                                activeDetailNode.destroy();
+                                activeDetailNode = null;
+                            }
+                        }
+
+                        // 通知 Layout 强制刷新重新排版
+                        const layout = this.listContent.getComponent(Layout);
+                        if (layout) layout.updateLayout();
+                    });
+                }
+            } else {
+                container.active = false;
             }
+        });
+    }
 
-            if (nameLabel) nameLabel.string = res.player.name;
-            if (scoreLabel) scoreLabel.string = `${res.total} 分`;
-
-            const bonusStr = res.bonusPoints > 0 ? ` | 额外: ${res.bonusPoints}分` : "";
-            if (detailLabel) detailLabel.string = `德望: ${res.core}分 | 席位: ${res.tavern}分 | 资源: ${res.res}分${bonusStr}`;
-
-            if (detailCore) {
-                detailCore.string = `核心乘积分 = 德${res.deVal} * 望${res.wangVal} = ${res.core}分`;
+    private loadWeChatAvatar(avatarUrl: string, spriteComp: Sprite) {
+        if (!avatarUrl || !spriteComp) return;
+        assetManager.loadRemote<ImageAsset>(avatarUrl, { ext: '.png' }, (err, imageAsset) => {
+            if (err) {
+                console.warn('[ResultPopup] 微信头像加载失败:', err);
+                return;
             }
-            if (detailTavern) detailTavern.string = `上供席位分 =（${res.tavernList.length > 0 ? res.tavernList.join(' + ') : '0'} = ${res.tavern}分）`;
-            if (detailRes) detailRes.string = `资源转换分 =（金币折算${res.coinsScore} + 海草折算${res.seaweedScore} + 虾笼折算${res.cagesScore} + 龙虾折算${res.lobstersScore} = ${res.res}分）`;
-
-            let isExpanded = false;
-            if (btnExpand) {
-                btnExpand.node.on(Button.EventType.CLICK, () => {
-                    isExpanded = !isExpanded;
-                    if (detailsContainer) detailsContainer.active = isExpanded;
-                    if (arrowLabel) arrowLabel.string = isExpanded ? "▲" : "▼";
-
-                    const layout = this.listContent.getComponent(Layout);
-                    if (layout) layout.updateLayout();
-                }, this);
+            if (spriteComp && spriteComp.isValid) {
+                const texture = new Texture2D();
+                texture.image = imageAsset;
+                const spriteFrame = new SpriteFrame();
+                spriteFrame.texture = texture;
+                spriteComp.spriteFrame = spriteFrame;
             }
         });
     }

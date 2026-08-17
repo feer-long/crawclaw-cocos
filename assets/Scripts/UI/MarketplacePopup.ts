@@ -3,8 +3,8 @@ import { NetworkManager } from '../Network/NetworkManager';
 const { ccclass, property } = _decorator;
 
 const RES_NAMES: any = {
-    'lobsters': '龙虾', 'coins': '金币', 'seaweed': '海草',
-    'cages': '虾笼', 'de': '德', 'wang': '望',
+    'lobsters': '灵螯', 'coins': '贝币', 'seaweed': '仙草',
+    'cages': '灵鼎', 'de': '道', 'wang': '运',
     'normal': '普虾', 'grade3': '三品虾', 'grade2': '二品虾', 'grade1': '一品虾', 'royal': '虾王'
 };
 

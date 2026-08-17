@@ -40,14 +40,14 @@ export class BetPopup extends Component {
         if (this.challengerNameLabel) this.challengerNameLabel.string = `${data.challengerName} (挑战方)`;
         if (this.challengerLobsterLabel) {
             const cLob = data.challengerLobster;
-            this.challengerLobsterLabel.string = `${cLob?.name || GRADE_NAMES[cLob?.grade] || '龙虾'} (${cLob?.grade || ''})`;
+            this.challengerLobsterLabel.string = `${cLob?.name || GRADE_NAMES[cLob?.grade] || '灵螯'} (${cLob?.grade || ''})`;
         }
         if (this.defenderNameLabel) this.defenderNameLabel.string = `${data.defenderName} (防守方)`;
         if (this.defenderLobsterLabel) {
             const dLob = data.defenderLobster;
-            this.defenderLobsterLabel.string = `${dLob?.name || GRADE_NAMES[dLob?.grade] || '龙虾'} (${dLob?.grade || ''})`;
+            this.defenderLobsterLabel.string = `${dLob?.name || GRADE_NAMES[dLob?.grade] || '灵螯'} (${dLob?.grade || ''})`;
         }
-        if (this.myCoinsLabel) this.myCoinsLabel.string = `你的金币: ${this.myCoins}`;
+        if (this.myCoinsLabel) this.myCoinsLabel.string = `你的贝币: ${this.myCoins}`;
         if (this.hintLabel) this.hintLabel.string = '请选择押注方和金额';
         if (this.betAmountInput) {
             this.betAmountInput.string = '0';
@@ -99,7 +99,7 @@ export class BetPopup extends Component {
             return;
         }
         if (inputVal > this.myCoins) {
-            if (this.hintLabel) this.hintLabel.string = `下注金额不能超过你的金币(${this.myCoins})`;
+            if (this.hintLabel) this.hintLabel.string = `下注金额不能超过你的贝币(${this.myCoins})`;
             return;
         }
         this.betAmount = inputVal;
@@ -108,7 +108,7 @@ export class BetPopup extends Component {
             if (this.betAmount === 0) {
                 this.hintLabel.string = `选择押注【${targetName}】，下注金额为0，点击跳过下注`;
             } else {
-                this.hintLabel.string = `押注 ${this.betAmount} 金币给【${targetName}】，点击确认下注`;
+                this.hintLabel.string = `押注 ${this.betAmount} 贝币给【${targetName}】，点击确认下注`;
             }
         }
         this.updateButtonStates();

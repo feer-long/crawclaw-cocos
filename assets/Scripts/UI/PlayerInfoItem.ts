@@ -23,7 +23,7 @@ export class PlayerInfoItem extends Component {
         this.playerName.string = isSelf ? `👤 ${data.name}` : data.name;
 
         // 对应服务端的数据字段
-        this.attrLabel.string = `德:${data.de} | 望:${data.wang} | 客:${data.liZhang}`;
+        this.attrLabel.string = `道:${data.de} | 运:${data.wang} | 客:${data.liZhang}`;
         this.resourceLabel.string = `金:${data.coins} | 草:${data.seaweed} | 鼎:${data.cages}`;
         const tributeCards = data.tributeCards || [];
         const lobsters = data.lobsters || [];

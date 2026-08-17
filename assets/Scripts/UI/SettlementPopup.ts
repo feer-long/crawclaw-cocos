@@ -93,7 +93,7 @@ export class SettlementPopup extends Component {
         const resType = card.costResourceType === 'coins' ? '山海贝币' : '琅玕仙草';
 
         this.titleLabel.string = "🏁 终局得分选择";
-        this.descLabel.string = `由于你拥有【${card.name}】，你可以消耗${resType}来换取额外的德/望奖励！`;
+        this.descLabel.string = `由于你拥有【${card.name}】，你可以消耗${resType}来换取额外的道/运奖励！`;
         this.resultLabel.string = "请选择一个方案：";
 
         if (this.btnConfirm) this.btnConfirm.active = false;
@@ -120,7 +120,7 @@ export class SettlementPopup extends Component {
                 btn.active = true;
                 const label = btn.getComponentInChildren(Label);
                 if (label) {
-                    label.string = `消耗 ${choice.cost}${resType} ➜ 奖励 ${choice.reward} 德/望`;
+                    label.string = `消耗 ${choice.cost}${resType} ➜ 奖励 ${choice.reward} 道/运`;
                 }
 
                 const canAfford = currentResource >= choice.cost;

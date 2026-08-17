@@ -172,8 +172,8 @@ export class ActionSlotView extends Component {
         let reward = "", count = "";
         switch (areaId) {
             case 'shrimp_catching':
-                if (index === 0) { reward = "笼×1"; count = "1"; } // 剥离：+先手
-                else if (index === 1) { reward = "笼×1"; count = "2"; }
+                if (index === 0) { reward = "鼎×1"; count = "1"; } // 剥离：+先手
+                else if (index === 1) { reward = "鼎×1"; count = "2"; }
                 else if (index === 2) { reward = "金×1"; count = "3"; }
                 else if (index === 3) { reward = ""; count = "4"; }
                 break;
@@ -228,10 +228,10 @@ export class ActionSlotView extends Component {
             this.rewardSprite.spriteFrame = this.iconGrass;
             this.rewardSprite.node.setScale(new Vec3(grassScale, grassScale, 1));
             numStr = rewardStr.replace("草", "");
-        } else if (rewardStr.includes("笼")) {
+        } else if (rewardStr.includes("鼎")) {
             this.rewardSprite.spriteFrame = this.iconCage;
             this.rewardSprite.node.setScale(new Vec3(cageScale, cageScale, 1));
-            numStr = rewardStr.replace("笼", "");
+            numStr = rewardStr.replace("鼎", "");
         }
 
         // 【极简美学】：如果是 ×1，绝不啰嗦，直接隐藏！

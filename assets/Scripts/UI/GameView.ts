@@ -18,10 +18,16 @@ const { ccclass, property } = _decorator;
 @ccclass('GameView')
 export class GameView extends Component {
 
+    @property(Label) public stageLabel: Label = null;
+    @property(Node) public topBarNode: Node = null;
+
     @property(Label) public roundLabel: Label = null;
     @property(Label) public phaseLabel: Label = null;
     @property(Node) public resourceDeltaContainer: Node = null;
-    @property(Label) public resourceDeltaLabel: Label = null;
+    @property(Node) public resourceDeltaSprite: Node = null;
+
+    @property(Prefab) public helpPopupPrefab: Prefab = null;
+    @property(Node) public helpButtonNode: Node = null;
 
     @property(Prefab) public slotShrimpPrefab: Prefab = null;
     @property(Prefab) public slotMarketPrefab: Prefab = null;
@@ -58,28 +64,53 @@ export class GameView extends Component {
     private currentPopupNode: Node = null;
     private isGameFinished: boolean = false;
 
+    private blockingPopups: string[] = [
+        'BattlePopup', 'BetPopup', 'BreedingPopup', 'LobsterSelectPopup',
+        'MarketplacePopup', 'MarketPopup', 'SettlementPopup',
+        'CardListPopup', 'TributePopup', 'HelpPopup'
+    ];
+
     onLoad() {
         profiler.hideStats();
         this.isGameFinished = false;
 
-        // 创建 TopLayer 确保 PhaseLabel 永远置顶
+        // 1. 顶部栏层 (TopLayer)
         const topLayer = new Node('TopLayer');
         this.node.addChild(topLayer);
-        if (this.phaseLabel?.node) {
-            this.phaseLabel.node.parent = topLayer;
+
+        if (this.topBarNode) {
+            this.topBarNode.parent = topLayer;
+        } else {
+            if (this.stageLabel?.node) this.stageLabel.node.parent = topLayer;
+            if (this.phaseLabel?.node) this.phaseLabel.node.parent = topLayer;
+            if (this.roundLabel?.node) this.roundLabel.node.parent = topLayer;
         }
-        if (this.roundLabel?.node) {
-            this.roundLabel.node.parent = topLayer;
-        }
+
         if (this.resourceDeltaContainer) {
             this.resourceDeltaContainer.parent = topLayer;
+            const currentPos = this.resourceDeltaContainer.position;
+            this.resourceDeltaContainer.setPosition(currentPos.x, currentPos.y - 80, currentPos.z);
         }
+
+        // ==========================================
+        // 【核心修改】：创建专属的 FloatLayer (悬浮层)
+        // 这个层级与 TopLayer 完全解耦，永远不隐藏
+        // ==========================================
+        const floatLayer = new Node('FloatLayer');
+        this.node.addChild(floatLayer);
+
+        if (this.helpButtonNode) {
+            this.helpButtonNode.parent = floatLayer;
+        }
+
         this.schedule(() => {
+            // 先把 TopLayer 提到倒数第二位
             if (topLayer.isValid && topLayer.parent) {
-                const siblings = topLayer.parent.children;
-                if (siblings[siblings.length - 1] !== topLayer) {
-                    topLayer.setSiblingIndex(siblings.length - 1);
-                }
+                topLayer.setSiblingIndex(topLayer.parent.children.length - 1);
+            }
+            // 再把 FloatLayer 提到绝对的第一位（最后渲染，挡住一切）
+            if (floatLayer.isValid && floatLayer.parent) {
+                floatLayer.setSiblingIndex(floatLayer.parent.children.length - 1);
             }
         }, 0.1);
 
@@ -127,6 +158,73 @@ export class GameView extends Component {
         NetworkManager.instance.eventTarget.off('arenaBettingComplete', this.onArenaBettingComplete, this);
     }
 
+    update(dt: number) {
+        // ==========================================
+        // 1. 控制顶部状态栏 (TopBar) 的显隐逻辑
+        // ==========================================
+        if (this.topBarNode) {
+            if (this.isGameFinished) {
+                this.topBarNode.active = false;
+            } else {
+                let hasBlockingPopup = false;
+
+                if (this.currentPopupNode && this.currentPopupNode.isValid && this.currentPopupNode.active) {
+                    hasBlockingPopup = true;
+                }
+
+                if (!hasBlockingPopup) {
+                    for (let i = 0; i < this.node.children.length; i++) {
+                        const child = this.node.children[i];
+                        if (child.isValid && child.active && child.name !== 'TopLayer' && child.name !== 'FloatLayer') {
+                            for (const popupType of this.blockingPopups) {
+                                if (child.name === popupType || child.getComponent(popupType)) {
+                                    hasBlockingPopup = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (hasBlockingPopup) break;
+                    }
+                }
+
+                const targetActive = !hasBlockingPopup;
+                if (this.topBarNode.active !== targetActive) {
+                    this.topBarNode.active = targetActive;
+                }
+            }
+        }
+
+        // ==========================================
+        // 2. 【新增】：控制帮助按钮的显隐逻辑
+        // ==========================================
+        if (this.helpButtonNode) {
+            // 在当前场景节点下寻找是否有名为 'HelpPopup' 的节点存在
+            const existingHelp = this.node.getChildByName('HelpPopup');
+
+            // 判定帮助页是否正在打开状态
+            const isHelpOpen = existingHelp && existingHelp.isValid && existingHelp.active;
+
+            // 只要帮助页打开了，或者游戏已经结束了，就隐藏帮助按钮
+            const shouldShowHelpBtn = !isHelpOpen && !this.isGameFinished;
+
+            // 状态不同时才进行赋值，节省性能
+            if (this.helpButtonNode.active !== shouldShowHelpBtn) {
+                this.helpButtonNode.active = shouldShowHelpBtn;
+            }
+        }
+    }
+
+    public onBtnHelpClicked() {
+        if (!this.helpPopupPrefab) return;
+
+        const existingHelp = this.node.getChildByName('HelpPopup');
+        if (existingHelp) return;
+
+        const helpPopup = instantiate(this.helpPopupPrefab);
+        helpPopup.name = 'HelpPopup';
+        this.node.addChild(helpPopup);
+    }
+
     private onViewPlayerItems(data: any) {
         if (data.type === 'tribute') {
             const items = data.items || [];
@@ -171,7 +269,8 @@ export class GameView extends Component {
                 if (comp) (comp as any).initEndgameChoice(data);
             }
         } else if (currentPlayer) {
-            this.phaseLabel.string = `🏁 终局阶段：等待玩家 ${currentPlayer.playerName} 进行得分选择...`;
+            if (this.stageLabel) this.stageLabel.string = "终局阶段";
+            this.phaseLabel.string = `等待玩家 ${currentPlayer.playerName} 进行得分选择...`;
             if (this.currentPopupNode && this.currentPopupNode.isValid) {
                 this.currentPopupNode.destroy();
                 this.currentPopupNode = null;
@@ -182,7 +281,14 @@ export class GameView extends Component {
     private onGameEnded(data: any) {
         if (this.isGameFinished) return;
         this.isGameFinished = true;
-        this.phaseLabel.string = "🏁 游戏结束！正在进行最终得分结算...";
+
+        if (this.topBarNode) {
+            this.topBarNode.active = false;
+        } else {
+            if (this.stageLabel) this.stageLabel.node.active = false;
+            if (this.phaseLabel) this.phaseLabel.node.active = false;
+            if (this.roundLabel) this.roundLabel.node.active = false;
+        }
 
         if (this.currentPopupNode && this.currentPopupNode.isValid) {
             this.currentPopupNode.destroy();
@@ -205,7 +311,6 @@ export class GameView extends Component {
         const actionType = data.actionType;
         if (actionType === 'battleStart') {
             if (data.battleQueue) {
-                // 如果当前已有LobsterSelectPopup，不重新创建
                 if (this.currentPopupNode && this.currentPopupNode.isValid && this.currentPopupNode.name === 'LobsterSelectPopup') {
                     return;
                 }
@@ -221,9 +326,10 @@ export class GameView extends Component {
             if (data.betResults) {
                 const myResult = data.betResults[this.localPlayerId];
                 if (myResult && myResult.amount > 0) {
+                    if (this.stageLabel) this.stageLabel.string = "战斗结算";
                     this.phaseLabel.string = myResult.isCorrect
-                        ? `押注成功！投入 ${myResult.amount} 金币，获得 ${myResult.reward} 金币回报！`
-                        : `押注失败！投入的 ${myResult.amount} 金币已损失...`;
+                        ? `押注成功！投入 ${myResult.amount} 贝币，获得 ${myResult.reward} 贝币回报！`
+                        : `押注失败！投入的 ${myResult.amount} 贝币已损失...`;
                 }
             }
             const popupToClose = this.currentPopupNode;
@@ -250,7 +356,7 @@ export class GameView extends Component {
                 if (comp) (comp as any).init(data);
             }
         } else {
-            // 如果资源变化播报正在进行，不覆盖显示
+            if (this.stageLabel) this.stageLabel.string = "下注阶段";
             this.phaseLabel.string = '观战玩家正在下注，等待完成后进入战斗...';
             if (this.currentPopupNode && this.currentPopupNode.isValid && this.currentPopupNode.name === 'LobsterSelectPopup') {
                 this.currentPopupNode.destroy();
@@ -260,6 +366,7 @@ export class GameView extends Component {
     }
 
     private onArenaBettingComplete(data: any) {
+        if (this.stageLabel) this.stageLabel.string = "下注阶段";
         this.phaseLabel.string = '下注完成，即将进入战斗！';
     }
 
@@ -282,7 +389,6 @@ export class GameView extends Component {
         console.warn("⚠️ 操作被服务器拒绝:", data.message);
         this.phaseLabel.string = `⚠️ ${data.message}`;
 
-        // 1.5秒后恢复UI状态，避免按钮永久置灰（例如遇到频繁请求防抖错误时）
         setTimeout(() => {
             if (this.isValid) {
                 this.onStateChanged();
@@ -291,7 +397,7 @@ export class GameView extends Component {
     }
 
     private onResourceDelta(data: any) {
-        if (!this.resourceDeltaContainer || !this.resourceDeltaLabel) return;
+        if (!this.resourceDeltaContainer || !this.resourceDeltaSprite) return;
 
         const { playerId, deltas } = data;
         const gameState = NetworkManager.instance.getGameState();
@@ -305,33 +411,34 @@ export class GameView extends Component {
             const prefix = isSelf ? '👤 ' : '';
             const text = `${prefix}${playerName}: ${messages.join(', ')}`;
 
-            // 创建新的label节点
-            const labelNode = instantiate(this.resourceDeltaLabel.node);
-            const label = labelNode.getComponent(Label);
+            const detailSpriteNode = instantiate(this.resourceDeltaSprite);
+            detailSpriteNode.active = true;
+
+            const label = detailSpriteNode.getComponentInChildren(Label);
             if (label) {
                 label.string = text;
             }
-            this.resourceDeltaContainer.addChild(labelNode);
 
-            // 3秒后销毁
+            this.resourceDeltaContainer.addChild(detailSpriteNode);
+
             this.scheduleOnce(() => {
-                if (labelNode && labelNode.isValid) {
-                    labelNode.destroy();
+                if (detailSpriteNode && detailSpriteNode.isValid) {
+                    detailSpriteNode.destroy();
                 }
-            }, 3);
+            }, 1.5);
         }
     }
 
     private formatDeltaMessages(deltas: any): string[] {
         const RESOURCE_NAMES: Record<string, string> = {
-            coins: '金币',
-            seaweed: '海草',
-            cages: '笼子',
-            de: '德',
-            wang: '望',
-            liZhang: '里长',
+            coins: '贝币',
+            seaweed: '仙草',
+            cages: '灵鼎',
+            de: '道',
+            wang: '运',
+            liZhang: '寻山客',
             bonusPoints: '奖励分',
-            bonusGold: '奖励金币'
+            bonusGold: '奖励贝币'
         };
 
         const messages: string[] = [];
@@ -381,7 +488,8 @@ export class GameView extends Component {
             'tribute': '上供区',
             'marketplace': '闹市区'
         };
-        this.phaseLabel.string = `结算阶段：正在结算 【${areaNames[data.areaType] || data.areaType}】...`;
+        if (this.stageLabel) this.stageLabel.string = "结算阶段";
+        this.phaseLabel.string = `正在结算 【${areaNames[data.areaType] || data.areaType}】...`;
     }
 
     private onAreaWaitingUI(data: any) {
@@ -407,7 +515,7 @@ export class GameView extends Component {
                 const needMarketplace = (data.areaType === 'marketplace');
                 const needTribute = (data.areaType === 'tribute');
 
-if (this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !== 'LobsterSelectPopup' && this.currentPopupNode.name !== 'ResultPopup' && this.currentPopupNode.name !== 'BetPopup') {
+                if (this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !== 'LobsterSelectPopup' && this.currentPopupNode.name !== 'ResultPopup' && this.currentPopupNode.name !== 'BetPopup') {
                     if (isMarket !== needMarket || isBreeding !== needBreeding || isMarketplace !== needMarketplace || isTribute !== needTribute) {
                         this.currentPopupNode.destroy();
                         this.currentPopupNode = null;
@@ -440,7 +548,8 @@ if (this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !
         }
 
         if (data.playerId !== null && data.playerId != this.localPlayerId) {
-            this.phaseLabel.string = `结算阶段：等待 玩家 ${data.playerId} 操作...`;
+            if (this.stageLabel) this.stageLabel.string = "结算阶段";
+            this.phaseLabel.string = `等待 玩家 ${data.playerId} 操作...`;
             if (this.currentPopupNode && this.currentPopupNode.isValid && this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !== 'LobsterSelectPopup' && this.currentPopupNode.name !== 'ResultPopup' && this.currentPopupNode.name !== 'BetPopup') {
                 this.currentPopupNode.destroy();
                 this.currentPopupNode = null;
@@ -449,6 +558,7 @@ if (this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !
     }
 
     private onSettlementComplete(data: any) {
+        if (this.stageLabel) this.stageLabel.string = "结算阶段";
         this.phaseLabel.string = "本回合结算完成，准备进入下一回合！";
         if (this.currentPopupNode && this.currentPopupNode.isValid && this.currentPopupNode.name !== 'ResultPopup' && this.currentPopupNode.name !== 'BetPopup') {
             this.currentPopupNode.destroy();
@@ -462,10 +572,6 @@ if (this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !
         if (stateStr) {
             const gameState = JSON.parse(stateStr);
 
-            // ==========================================
-            // 【终极拦截器】：兼容 waitingEndgameChoice
-            // 第 5 回合最后，只要状态变成了这两个之一，强制切断业务逻辑并拉起结算排行榜！
-            // ==========================================
             if (gameState.status === 'finished') {
                 this.onGameEnded({ gameState: gameState });
                 return;
@@ -477,14 +583,16 @@ if (this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !
                 const currentPlayer = waitingList[currentIndex];
 
                 if (currentPlayer && currentPlayer.playerId != this.localPlayerId) {
-                    this.phaseLabel.string = `🏁 终局阶段：等待玩家 ${currentPlayer.playerName} 进行得分选择...`;
+                    if (this.stageLabel) this.stageLabel.string = "终局阶段";
+                    this.phaseLabel.string = `等待玩家 ${currentPlayer.playerName} 进行得分选择...`;
                     if (this.currentPopupNode && this.currentPopupNode.name === 'SettlementPopup') {
                         this.currentPopupNode.destroy();
                         this.currentPopupNode = null;
                     }
                     this.onGameEnded({ gameState: gameState });
                 } else if (currentPlayer && currentPlayer.playerId == this.localPlayerId) {
-                    this.phaseLabel.string = `🏁 终局阶段：轮到你进行得分选择...`;
+                    if (this.stageLabel) this.stageLabel.string = "终局阶段";
+                    this.phaseLabel.string = `轮到你进行得分选择...`;
                     if (this.currentPopupNode && this.currentPopupNode.isValid && this.currentPopupNode.name !== 'SettlementPopup') {
                         this.currentPopupNode.destroy();
                         this.currentPopupNode = null;
@@ -499,7 +607,8 @@ if (this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !
 
     private refreshUI(gameState: any) {
         if (!gameState) return;
-        this.roundLabel.string = `🏁 第 ${gameState.currentRound || 1} 回合`;
+
+        this.roundLabel.string = `${gameState.currentRound || 1}`;
 
         const players = gameState.players || [];
         if (this.playerStatusManager) {
@@ -539,26 +648,27 @@ if (this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !
 
         if (gameState.phase === 'settlement') {
             this.btnNextPlayer.active = false;
-            this.phaseLabel.string = "结算阶段 (⏳ 等待区域结算...)";
+            if (this.stageLabel) this.stageLabel.string = "结算阶段";
+            this.phaseLabel.string = "⏳ 等待区域结算...";
             if (nextBtnComp) nextBtnComp.interactable = false;
         } else {
             this.btnNextPlayer.active = true;
+            if (this.stageLabel) this.stageLabel.string = "工放阶段";
             if (isMyTurn) {
                 if (hasPlacedThisTurn) {
-                    this.phaseLabel.string = "工放阶段 (👉 已放置，可撤回，或点下一阶段)";
+                    this.phaseLabel.string = "👉 已放置，可撤回，或点下一阶段";
                     if (nextBtnComp) nextBtnComp.interactable = true;
                 } else {
-                    this.phaseLabel.string = "工放阶段 (👉 请放置里长)";
+                    this.phaseLabel.string = "👉 请放置寻山客";
                     if (nextBtnComp) nextBtnComp.interactable = false;
                 }
             } else if (gameState.phase === 'placement') {
                 const waitingPlayer = players[gameState.currentPlayerIndex];
-                this.phaseLabel.string = waitingPlayer ? `(⏳ 等待 ${waitingPlayer.name} 行动...)` : `(⏳ 等待玩家行动...)`;
+                this.phaseLabel.string = waitingPlayer ? `⏳ 等待 ${waitingPlayer.name} 行动...` : `⏳ 等待玩家行动...`;
                 if (nextBtnComp) nextBtnComp.interactable = false;
             }
         }
 
-        // ===== 新增：更新德望轨道 =====
         if (this.deWangTrackView) {
             this.deWangTrackView.updateTracks(players);
         }
@@ -602,14 +712,12 @@ if (this.currentPopupNode.name !== 'BattlePopup' && this.currentPopupNode.name !
             let canPlace = isMyTurn && effectiveLiZhang > 0 && occupantId === null;
             let failReason = "";
 
-            // 【核心修复3】：去掉了上供区的第四回合限制
             if (areaId === 'marketplace') {
                 if (idx === 0 && currentRound < 2) failReason = "闹市区1号格在第2回合才开放";
                 else if (idx === 1 && currentRound < 3) failReason = "闹市区2号格在第3回合才开放";
                 else if (idx === 2 && currentRound < 4) failReason = "闹市区3号格在第4回合才开放";
             }
 
-            // 2. 如果回合未到，强制不能点击
             if (failReason) {
                 canPlace = false;
             }

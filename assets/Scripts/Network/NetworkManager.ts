@@ -258,7 +258,7 @@ export class NetworkManager {
         for (const key in deltas) {
             const value = deltas[key];
             if (key === 'lobsters' && typeof value === 'object') {
-                // 龙虾变化: {grade: amount}
+                // 灵螯变化: {grade: amount}
                 for (const grade in value) {
                     const amount = value[grade];
                     if (amount > 0) {

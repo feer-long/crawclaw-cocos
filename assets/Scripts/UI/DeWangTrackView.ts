@@ -3,8 +3,8 @@ const { ccclass, property } = _decorator;
 
 @ccclass('DeWangTrackView')
 export class DeWangTrackView extends Component {
-    @property(Node) public deTrackContainer: Node = null; // 德轨道容器
-    @property(Node) public wangTrackContainer: Node = null; // 望轨道容器
+    @property(Node) public deTrackContainer: Node = null; // 道轨道容器
+    @property(Node) public wangTrackContainer: Node = null; // 运轨道容器
 
     @property(Prefab) public trackCellPrefab: Prefab = null; // 轨道单个格子预制体
     @property(Prefab) public playerMarkerPrefab: Prefab = null; // 玩家棋子预制体
@@ -27,13 +27,13 @@ export class DeWangTrackView extends Component {
         this.wangTrackContainer.removeAllChildren();
 
         for (let i = 0; i < 16; i++) {
-            // 生成德格子 (传入 true，展示 ValueLabel)
+            // 生成道格子 (传入 true，展示 ValueLabel)
             const deCell = instantiate(this.trackCellPrefab);
             this.deTrackContainer.addChild(deCell);
             this.setupCell(deCell, i, true);
             this.deCells.push(deCell);
 
-            // 生成望格子 (传入 false，隐藏 ValueLabel，避免重复)
+            // 生成运格子 (传入 false，隐藏 ValueLabel，避免重复)
             const wangCell = instantiate(this.trackCellPrefab);
             this.wangTrackContainer.addChild(wangCell);
             this.setupCell(wangCell, i, false);

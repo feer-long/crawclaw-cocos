@@ -479,10 +479,10 @@
     "_string": "我的上供卡",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
-    "_actualFontSize": 31,
-    "_fontSize": 30,
+    "_actualFontSize": 41,
+    "_fontSize": 40,
     "_fontFamily": "Arial",
-    "_lineHeight": 35,
+    "_lineHeight": 55,
     "_overflow": 2,
     "_enableWrapText": true,
     "_font": null,
@@ -3232,6 +3232,8 @@
       "__id__": 0
     },
     "fileId": "70z56TFiNGcqxNkQouXzbm",
+    "instance": null,
+    "targetOverrides": null,
     "nestedPrefabInstanceRoots": null
   },
   {

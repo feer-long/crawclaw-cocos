@@ -91,16 +91,16 @@ export class MarketPopup extends Component {
         const marketLobsterCount = this.rawData.marketLobsterCount;
 
         this.actionCountLabel.string = `剩余操作次数：${this.actionCount}`;
-        this.marketInfoLabel.string = `市场龙虾余量：${marketLobsterCount} / 8`;
+        this.marketInfoLabel.string = `市场灵螯余量：${marketLobsterCount} / 8`;
 
         const hasMarketRule = player.permaBuffs && player.permaBuffs.includes('permaBuff_market_rule');
         if (hasMarketRule) {
-            this.marketInfoLabel.string += '\n📌 市场规则：普通龙虾 ¥1/只 (不可卖出)';
+            this.marketInfoLabel.string += '\n📌 市场规则：普通灵螯 ¥1/只 (不可卖出)';
         }
 
         this.playerResourceLabel.string = `拥有：💰${player.coins} 🌿${player.seaweed} 🛒${player.cages} 🦞${player.lobsters.length}`;
 
-        // 刷新龙虾架UI
+        // 刷新灵螯架UI
         for (let i = 0; i < 8; i++) {
             if (this.lobsterIcons[i]) {
                 const hasLobster = i >= (8 - marketLobsterCount);
@@ -210,8 +210,8 @@ export class MarketPopup extends Component {
             if (this.actionCount <= 0) failReason = "没有剩余交易次数了";
             else if (occupantId !== null) failReason = "该槽位已被占领";
             else if (!isRoundUnlocked) failReason = `当前是第${currentRound}回合，该槽位尚未开放`;
-            else if (!notMaxedOut) failReason = "你已经雇佣了全部2个额外里长";
-            else if (!canAfford) failReason = "金币不足(需要 6 金币)";
+            else if (!notMaxedOut) failReason = "你已经雇佣了全部2个额外寻山客";
+            else if (!canAfford) failReason = "贝币不足(需要 6 贝币)";
             else canPlace = true;
 
             const slotView = slotNode.getComponent(ActionSlotView);

@@ -1,0 +1,134 @@
+{
+  "ver": "1.0.27",
+  "importer": "image",
+  "imported": true,
+  "uuid": "a34368b7-4f81-44bb-9edb-2dfe914e4027",
+  "files": [
+    ".json",
+    ".png"
+  ],
+  "subMetas": {
+    "6c48a": {
+      "importer": "texture",
+      "uuid": "a34368b7-4f81-44bb-9edb-2dfe914e4027@6c48a",
+      "displayName": "寻山访海进化图",
+      "id": "6c48a",
+      "name": "texture",
+      "userData": {
+        "wrapModeS": "clamp-to-edge",
+        "wrapModeT": "clamp-to-edge",
+        "imageUuidOrDatabaseUri": "a34368b7-4f81-44bb-9edb-2dfe914e4027",
+        "isUuid": true,
+        "visible": false,
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "none",
+        "anisotropy": 0
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "f9941": {
+      "importer": "sprite-frame",
+      "uuid": "a34368b7-4f81-44bb-9edb-2dfe914e4027@f9941",
+      "displayName": "寻山访海进化图",
+      "id": "f9941",
+      "name": "spriteFrame",
+      "userData": {
+        "trimThreshold": 1,
+        "rotated": false,
+        "offsetX": 3.5,
+        "offsetY": -33.5,
+        "trimX": 16,
+        "trimY": 184,
+        "width": 1431,
+        "height": 323,
+        "rawWidth": 1456,
+        "rawHeight": 624,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "packable": true,
+        "pixelsToUnit": 100,
+        "pivotX": 0.5,
+        "pivotY": 0.5,
+        "meshType": 0,
+        "vertices": {
+          "rawPosition": [
+            -715.5,
+            -161.5,
+            0,
+            715.5,
+            -161.5,
+            0,
+            -715.5,
+            161.5,
+            0,
+            715.5,
+            161.5,
+            0
+          ],
+          "indexes": [
+            0,
+            1,
+            2,
+            2,
+            1,
+            3
+          ],
+          "uv": [
+            16,
+            440,
+            1447,
+            440,
+            16,
+            117,
+            1447,
+            117
+          ],
+          "nuv": [
+            0.01098901098901099,
+            0.1875,
+            0.9938186813186813,
+            0.1875,
+            0.01098901098901099,
+            0.7051282051282052,
+            0.9938186813186813,
+            0.7051282051282052
+          ],
+          "minPos": [
+            -715.5,
+            -161.5,
+            0
+          ],
+          "maxPos": [
+            715.5,
+            161.5,
+            0
+          ]
+        },
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "a34368b7-4f81-44bb-9edb-2dfe914e4027@6c48a",
+        "atlasUuid": "",
+        "trimType": "auto"
+      },
+      "ver": "1.0.12",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "type": "sprite-frame",
+    "fixAlphaTransparencyArtifacts": false,
+    "hasAlpha": true,
+    "redirect": "a34368b7-4f81-44bb-9edb-2dfe914e4027@6c48a"
+  }
+}

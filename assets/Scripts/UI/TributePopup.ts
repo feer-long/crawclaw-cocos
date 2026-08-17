@@ -754,7 +754,7 @@ export class TributePopup extends Component {
         }
 
         if (this.pendingChoiceType === 'buy_advanced_lobster') {
-            this.waitingChoiceLabel.string = "🎁 上供触发效果：请选择购买高级龙虾的品级";
+            this.waitingChoiceLabel.string = "🎁 上供触发效果：请选择购买高级灵螯的品级";
             this.choiceOptions.forEach(opt => {
                 const cost = opt.grade === 'grade1' ? 3 : (opt.grade === 'grade2' ? 2 : 1);
                 const canAfford = this.player.coins >= cost;
@@ -763,8 +763,8 @@ export class TributePopup extends Component {
         }
         else if (this.pendingChoiceType === 'discard_attack') {
             this.waitingChoiceLabel.string = "🎁 上供触发效果：请选择其他玩家弃置的资源类型";
-            this.createDynamicChoiceBtn("弃置龙虾 🦞", "discard", "lobster");
-            this.createDynamicChoiceBtn("弃置虾笼 🛒", "discard", "cage");
+            this.createDynamicChoiceBtn("弃置灵螯 🦞", "discard", "lobster");
+            this.createDynamicChoiceBtn("弃置灵鼎 🛒", "discard", "cage");
         }
     }
 
@@ -808,8 +808,8 @@ export class TributePopup extends Component {
     }
 
     private _onError = (data: any) => {
-        if (data.message && data.message.indexOf('金币不足') !== -1 && this.isWaitingChoice) {
-            this.waitingChoiceLabel.string = "⚠️ 金币不足，购买取消";
+        if (data.message && data.message.indexOf('贝币不足') !== -1 && this.isWaitingChoice) {
+            this.waitingChoiceLabel.string = "⚠️ 贝币不足，购买取消";
             this._hideChoiceUI();
             return;
         }

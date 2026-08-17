@@ -2,7 +2,8 @@ function isIP(host: string): boolean {
     return /^\d{1,3}(\.\d{1,3}){3}(:\d+)?$/.test(host);
 }
 
-const API_HOST = "121.4.62.126";
+// const API_HOST = "121.4.62.126";
+const API_HOST = "127.0.0.1:3100";
 const wsProto = isIP(API_HOST) ? "ws" : "wss";
 const httpProto = isIP(API_HOST) ? "http" : "https";
 
