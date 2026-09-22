@@ -1,4 +1,4 @@
-import { _decorator, Component, Label, Node, Prefab, instantiate, Button, profiler, Color } from 'cc';
+import { _decorator, Component, Label, Node, Prefab, instantiate, Button, profiler, Color, UITransform, Widget } from 'cc';
 import { NetworkManager } from '../Network/NetworkManager';
 import { ActionSlotView } from './ActionSlotView';
 import { SettlementPopup } from './SettlementPopup';
@@ -74,43 +74,17 @@ export class GameView extends Component {
         profiler.hideStats();
         this.isGameFinished = false;
 
-        // 1. 顶部栏层 (TopLayer)
-        const topLayer = new Node('TopLayer');
-        this.node.addChild(topLayer);
-
-        if (this.topBarNode) {
-            this.topBarNode.parent = topLayer;
-        } else {
-            if (this.stageLabel?.node) this.stageLabel.node.parent = topLayer;
-            if (this.phaseLabel?.node) this.phaseLabel.node.parent = topLayer;
-            if (this.roundLabel?.node) this.roundLabel.node.parent = topLayer;
-        }
-
         if (this.resourceDeltaContainer) {
-            this.resourceDeltaContainer.parent = topLayer;
             const currentPos = this.resourceDeltaContainer.position;
             this.resourceDeltaContainer.setPosition(currentPos.x, currentPos.y - 80, currentPos.z);
         }
 
-        // ==========================================
-        // 【核心修改】：创建专属的 FloatLayer (悬浮层)
-        // 这个层级与 TopLayer 完全解耦，永远不隐藏
-        // ==========================================
-        const floatLayer = new Node('FloatLayer');
-        this.node.addChild(floatLayer);
-
-        if (this.helpButtonNode) {
-            this.helpButtonNode.parent = floatLayer;
-        }
-
         this.schedule(() => {
-            // 先把 TopLayer 提到倒数第二位
-            if (topLayer.isValid && topLayer.parent) {
-                topLayer.setSiblingIndex(topLayer.parent.children.length - 1);
+            if (this.helpButtonNode && this.helpButtonNode.isValid) {
+                this.helpButtonNode.setSiblingIndex(this.node.children.length - 1);
             }
-            // 再把 FloatLayer 提到绝对的第一位（最后渲染，挡住一切）
-            if (floatLayer.isValid && floatLayer.parent) {
-                floatLayer.setSiblingIndex(floatLayer.parent.children.length - 1);
+            if (this.resourceDeltaContainer && this.resourceDeltaContainer.isValid) {
+                this.resourceDeltaContainer.setSiblingIndex(this.node.children.length - 1);
             }
         }, 0.1);
 
@@ -140,77 +114,97 @@ export class GameView extends Component {
     }
 
     onDestroy() {
-        NetworkManager.instance.eventTarget.off('gameStateUpdate', this.onStateChanged, this);
-        NetworkManager.instance.eventTarget.off('playerResourceUpdate', this.onStateChanged, this);
-        NetworkManager.instance.eventTarget.off('playerResourceDelta', this.onResourceDelta, this);
-        NetworkManager.instance.eventTarget.off('serverGameAction', this.onStateChanged, this);
-        NetworkManager.instance.eventTarget.off('error', this.onError, this);
-        NetworkManager.instance.eventTarget.off('areaSettlementStart', this.onAreaSettlementStart, this);
-        NetworkManager.instance.eventTarget.off('areaWaitingUI', this.onAreaWaitingUI, this);
-        NetworkManager.instance.eventTarget.off('settlementComplete', this.onSettlementComplete, this);
-        NetworkManager.instance.eventTarget.off('battleStart', this.onBattleEvent, this);
-        NetworkManager.instance.eventTarget.off('battleUpdate', this.onBattleEvent, this);
-        NetworkManager.instance.eventTarget.off('battleEnded', this.onBattleEvent, this);
-        NetworkManager.instance.eventTarget.off('gameEnded', this.onGameEnded, this);
-        NetworkManager.instance.eventTarget.off('endgameScoreChoiceRequired', this.onEndgameScoreChoiceRequired, this);
-        NetworkManager.instance.eventTarget.off('ui_view_player_items', this.onViewPlayerItems, this);
-        NetworkManager.instance.eventTarget.off('arenaBettingStart', this.onArenaBettingStart, this);
-        NetworkManager.instance.eventTarget.off('arenaBettingComplete', this.onArenaBettingComplete, this);
+        // 【核心修复】：使用 targetOff(this) 一次性清理所有以 this 为 target 注册的事件监听，
+        // 防止切换场景时 eventTarget 已失效导致 `_off of null` 报错
+        if (NetworkManager.instance && NetworkManager.instance.eventTarget) {
+            NetworkManager.instance.eventTarget.targetOff(this);
+        }
     }
 
     update(dt: number) {
-        // ==========================================
-        // 1. 控制顶部状态栏 (TopBar) 的显隐逻辑
-        // ==========================================
-        if (this.topBarNode) {
-            if (this.isGameFinished) {
-                this.topBarNode.active = false;
-            } else {
-                let hasBlockingPopup = false;
+        // 【新增】：如果当前组件或节点已经失效（被销毁），立刻退出，杜绝 Error 5000
+        if (!this.isValid || !this.node || !this.node.isValid) return;
 
-                if (this.currentPopupNode && this.currentPopupNode.isValid && this.currentPopupNode.active) {
-                    hasBlockingPopup = true;
+        const canvasTrans = this.node.getComponent(UITransform);
+        if (canvasTrans) {
+            // 1. 强行置顶 Title_sprite (顶部栏)
+            if (this.topBarNode && this.topBarNode.active) {
+                const widget = this.topBarNode.getComponent(Widget);
+                if (widget && widget.enabled) {
+                    widget.enabled = false;
                 }
 
-                if (!hasBlockingPopup) {
-                    for (let i = 0; i < this.node.children.length; i++) {
-                        const child = this.node.children[i];
-                        if (child.isValid && child.active && child.name !== 'TopLayer' && child.name !== 'FloatLayer') {
-                            for (const popupType of this.blockingPopups) {
-                                if (child.name === popupType || child.getComponent(popupType)) {
-                                    hasBlockingPopup = true;
-                                    break;
-                                }
-                            }
-                        }
-                        if (hasBlockingPopup) break;
+                const topBarTrans = this.topBarNode.getComponent(UITransform);
+                if (topBarTrans) {
+                    const targetY = (canvasTrans.height / 2) - (topBarTrans.height * (1 - topBarTrans.anchorY));
+                    if (Math.abs(this.topBarNode.position.y - targetY) > 1) {
+                        this.topBarNode.setPosition(this.topBarNode.position.x, targetY, this.topBarNode.position.z);
                     }
                 }
+            }
 
-                const targetActive = !hasBlockingPopup;
-                if (this.topBarNode.active !== targetActive) {
-                    this.topBarNode.active = targetActive;
+            // ==========================================
+            // 【修改】：计算帮助按钮的正确位置 (放在顶部栏的下方)
+            // ==========================================
+            if (this.helpButtonNode && this.helpButtonNode.active) {
+                const widget = this.helpButtonNode.getComponent(Widget);
+                if (widget && widget.enabled) {
+                    widget.enabled = false;
+                }
+
+                const helpTrans = this.helpButtonNode.getComponent(UITransform);
+                if (helpTrans) {
+                    const titleHeight = 262;  // 你的 Title_sprite 的高度
+                    const spacing = 15;       // 你想要的间隔高度（可随时修改，比如改成 10 或 20）
+
+                    // 按钮顶部边缘的 Y 坐标 = 屏幕最顶部 - 顶部栏高度 - 间隔高度
+                    const buttonTopY = (canvasTrans.height / 2) - titleHeight - spacing;
+
+                    // 根据按钮的锚点，推算出按钮中心点的真实 Y 坐标
+                    const targetY = buttonTopY - (helpTrans.height * (1 - helpTrans.anchorY));
+
+                    if (Math.abs(this.helpButtonNode.position.y - targetY) > 1) {
+                        this.helpButtonNode.setPosition(this.helpButtonNode.position.x, targetY, this.helpButtonNode.position.z);
+                    }
                 }
             }
         }
 
         // ==========================================
-        // 2. 【新增】：控制帮助按钮的显隐逻辑
+        // 弹窗与组件显隐逻辑（保留原有功能）
         // ==========================================
-        if (this.helpButtonNode) {
-            // 在当前场景节点下寻找是否有名为 'HelpPopup' 的节点存在
-            const existingHelp = this.node.getChildByName('HelpPopup');
+        if (this.isGameFinished) {
+            if (this.topBarNode) this.topBarNode.active = false;
+            if (this.helpButtonNode) this.helpButtonNode.active = false;
+            return;
+        }
 
-            // 判定帮助页是否正在打开状态
-            const isHelpOpen = existingHelp && existingHelp.isValid && existingHelp.active;
+        let hasBlockingPopup = false;
+        if (this.currentPopupNode && this.currentPopupNode.isValid && this.currentPopupNode.active) {
+            hasBlockingPopup = true;
+        }
 
-            // 只要帮助页打开了，或者游戏已经结束了，就隐藏帮助按钮
-            const shouldShowHelpBtn = !isHelpOpen && !this.isGameFinished;
-
-            // 状态不同时才进行赋值，节省性能
-            if (this.helpButtonNode.active !== shouldShowHelpBtn) {
-                this.helpButtonNode.active = shouldShowHelpBtn;
+        if (!hasBlockingPopup) {
+            for (let i = 0; i < this.node.children.length; i++) {
+                const child = this.node.children[i];
+                if (child.isValid && child.active) {
+                    for (const popupType of this.blockingPopups) {
+                        if (child.name === popupType || child.getComponent(popupType)) {
+                            hasBlockingPopup = true;
+                            break;
+                        }
+                    }
+                }
+                if (hasBlockingPopup) break;
             }
+        }
+
+        const targetActive = !hasBlockingPopup;
+        if (this.topBarNode && this.topBarNode.active !== targetActive) {
+            this.topBarNode.active = targetActive;
+        }
+        if (this.helpButtonNode && this.helpButtonNode.active !== targetActive) {
+            this.helpButtonNode.active = targetActive;
         }
     }
 
@@ -288,6 +282,10 @@ export class GameView extends Component {
             if (this.stageLabel) this.stageLabel.node.active = false;
             if (this.phaseLabel) this.phaseLabel.node.active = false;
             if (this.roundLabel) this.roundLabel.node.active = false;
+        }
+
+        if (this.helpButtonNode) {
+            this.helpButtonNode.active = false;
         }
 
         if (this.currentPopupNode && this.currentPopupNode.isValid) {
