@@ -22,10 +22,10 @@ export class LobbyView extends Component {
     }
 
     onDestroy() {
-        NetworkManager.instance.eventTarget.off('roomCreated', this.onRoomCreated, this);
-        NetworkManager.instance.eventTarget.off('playerJoined', this.onRoomJoined, this);
-        NetworkManager.instance.eventTarget.off('playerReconnected', this.onRoomJoined, this);
-        NetworkManager.instance.eventTarget.off('error', this.onError, this);
+        // 【修复】：使用 targetOff(this) 并增加空值保护，避免切场景时 eventTarget 已失效导致报错
+        if (NetworkManager.instance && NetworkManager.instance.eventTarget) {
+            NetworkManager.instance.eventTarget.targetOff(this);
+        }
     }
 
     private getUserId(): string {

@@ -122,15 +122,10 @@ export class RoomView extends Component {
     }
 
     onDestroy() {
-        NetworkManager.instance.eventTarget.off('roomStateUpdate', this.onRoomStateUpdate, this);
-        NetworkManager.instance.eventTarget.off('gameStarted', this.onGameStarted, this);
-        NetworkManager.instance.eventTarget.off('disconnect', this.onDisconnect, this);
-        NetworkManager.instance.eventTarget.off('reconnected', this.onReconnected, this);
-        NetworkManager.instance.eventTarget.off('playerKicked', this.onPlayerKicked, this);
-        NetworkManager.instance.eventTarget.off('playerLeft', this.onPlayerLeft, this);
-        NetworkManager.instance.eventTarget.off('error', this.onRoomError, this);
-        NetworkManager.instance.eventTarget.off('aiAdded', this.onAiAdded, this);
-        NetworkManager.instance.eventTarget.off('aiKicked', this.onAiKicked, this);
+        // 【修复】：使用 targetOff(this) 并增加空值保护，避免切场景时 eventTarget 已失效导致报错
+        if (NetworkManager.instance && NetworkManager.instance.eventTarget) {
+            NetworkManager.instance.eventTarget.targetOff(this);
+        }
 
         // 清理踢出按钮监听
         for (let i = 0; i < this.kickButtons.length; i++) {

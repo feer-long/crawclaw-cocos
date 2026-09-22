@@ -37,6 +37,8 @@ export class ResultPopup extends Component {
                 console.warn('[ResultPopup] QR码预加载失败:', err);
                 return;
             }
+            // 【修复】：异步回调期间可能组件已被销毁，需校验节点有效性
+            if (!this.node || !this.node.isValid || !this.qrCodeNode || !this.qrCodeNode.isValid) return;
             const texture = new Texture2D();
             texture.image = imageAsset;
             const spriteFrame = new SpriteFrame();
@@ -312,21 +314,65 @@ export class ResultPopup extends Component {
         return calculateEstimatedScore(player, gameState);
     }
 
+    private _isReturning: boolean = false;
+
     public onBtnReturnClicked() {
+        // 防抖保护：使用 _isReturning 标志位，防止在 SCALE 动画播放期间被重复点击
+        if (this._isReturning) return;
+        this._isReturning = true;
+
+        // 延迟禁用按钮，让 Button 的 SCALE 缩放动画有足够时间播放完再切换到禁用态
+        this.scheduleOnce(() => {
+            if (this.btnReturn) {
+                this.btnReturn.interactable = false;
+                const btnLabel = this.btnReturn.getComponentInChildren(Label);
+                if (btnLabel) btnLabel.string = "加载中...";
+            }
+        }, 0.12);
+
+        // 2. 清理本地缓存
         sys.localStorage.removeItem('currentRoomId');
         sys.localStorage.removeItem('localPlayerId');
         sys.localStorage.removeItem('initialRoomState');
         sys.localStorage.removeItem('currentGameState');
         sys.localStorage.removeItem('myLastPlacedArea');
         sys.localStorage.removeItem('myLastPlacedSlot');
-        NetworkManager.instance.disconnect();
-        NetworkManager.instance.ensureLobbyConnection();
+
+        // 注意：【千万不要】在这里调用 disconnect()！
+
+        // 3. 异步加载远程 Bundle 和场景
         assetManager.loadBundle('remote_assets', (err, bundle) => {
-            if (err) return console.error(err);
+            if (err) {
+                console.error(err);
+                if (this.btnReturn) this.btnReturn.interactable = true;
+                this._isReturning = false;
+                return;
+            }
             bundle.loadScene('Lobby', (err, sceneAsset) => {
-                if (err) return console.error(err);
-                director.runScene(sceneAsset);
+                if (err) {
+                    console.error(err);
+                    if (this.btnReturn) this.btnReturn.interactable = true;
+                    this._isReturning = false;
+                    return;
+                }
+
+                // 4. 【核心修复】：将场景切换的回调利用起来
+                // 此时执行 runScene，引擎会平稳、安全地销毁当前游戏场景，所有脚本的 onDestroy 都能正常取到 eventTarget。
+                director.runScene(sceneAsset, null, () => {
+                    // 当新场景（Lobby）真正加载并运行后，才执行网络的断开与重连
+                    if (NetworkManager.instance) {
+                        NetworkManager.instance.disconnect();
+                        NetworkManager.instance.ensureLobbyConnection();
+                    }
+                });
             });
         });
+    }
+
+    protected onDestroy() {
+        // 安全卸载所有可能注册到 NetworkManager 上的事件监听，避免切场景时 eventTarget 已销毁导致 _off of null
+        if (NetworkManager.instance && NetworkManager.instance.eventTarget) {
+            NetworkManager.instance.eventTarget.targetOff(this);
+        }
     }
 }

@@ -106,7 +106,9 @@ export class InviteManager {
             this._onShowCallback = null;
         }
 
-        NetworkManager.instance.eventTarget.off('playerJoined', this.onPlayerJoined, this);
-        NetworkManager.instance.eventTarget.off('error', this.onError, this);
+        // 【修复】：使用 targetOff(this) 并增加空值保护
+        if (NetworkManager.instance && NetworkManager.instance.eventTarget) {
+            NetworkManager.instance.eventTarget.targetOff(this);
+        }
     }
 }

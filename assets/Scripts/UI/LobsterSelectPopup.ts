@@ -391,6 +391,9 @@ export class LobsterSelectPopup extends Component {
     }
 
     protected onDestroy() {
-        NetworkManager.instance.eventTarget.off('lobsterSelected', this._onLobsterSelected, this);
+        // 【修复】：使用 targetOff(this) 并增加空值保护，避免切场景时 eventTarget 已失效导致报错
+        if (NetworkManager.instance && NetworkManager.instance.eventTarget) {
+            NetworkManager.instance.eventTarget.targetOff(this);
+        }
     }
 }

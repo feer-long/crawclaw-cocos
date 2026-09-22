@@ -283,8 +283,9 @@ export class SettlementPopup extends Component {
         this._clearLoadingTimer();
         this.isWaitingResponse = false;
         this.pendingAction = null;
-        NetworkManager.instance.eventTarget.off('areaSettlementStart', this._onSettlementResponse, this);
-        NetworkManager.instance.eventTarget.off('settlementComplete', this._onSettlementResponse, this);
-        NetworkManager.instance.eventTarget.off('error', this._onError, this);
+        // 【修复】：使用 targetOff(this) 并增加空值保护，避免切场景时 eventTarget 已失效导致报错
+        if (NetworkManager.instance && NetworkManager.instance.eventTarget) {
+            NetworkManager.instance.eventTarget.targetOff(this);
+        }
     }
 }

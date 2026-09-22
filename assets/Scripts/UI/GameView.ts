@@ -1,4 +1,4 @@
-import { _decorator, Component, Label, Node, Prefab, instantiate, Button, profiler, Color, UITransform, Widget } from 'cc';
+import { _decorator, Component, Label, Node, Prefab, instantiate, Button, profiler, Color, UITransform, Widget, AudioSource, Sprite, SpriteFrame } from 'cc';
 import { NetworkManager } from '../Network/NetworkManager';
 import { ActionSlotView } from './ActionSlotView';
 import { SettlementPopup } from './SettlementPopup';
@@ -28,6 +28,14 @@ export class GameView extends Component {
 
     @property(Prefab) public helpPopupPrefab: Prefab = null;
     @property(Node) public helpButtonNode: Node = null;
+
+    // ==========================================
+    // 音乐控制相关的属性槽位
+    // ==========================================
+    @property(Node) public musicButtonNode: Node = null;           // 音乐按钮节点
+    @property(AudioSource) public bgmSource: AudioSource = null;   // 背景音乐播放器
+    @property(SpriteFrame) public musicOnSprite: SpriteFrame = null; // 音乐开启时的图标 (mus_1)
+    @property(SpriteFrame) public musicOffSprite: SpriteFrame = null;// 音乐关闭时的图标 (mus_2)
 
     @property(Prefab) public slotShrimpPrefab: Prefab = null;
     @property(Prefab) public slotMarketPrefab: Prefab = null;
@@ -83,6 +91,9 @@ export class GameView extends Component {
             if (this.helpButtonNode && this.helpButtonNode.isValid) {
                 this.helpButtonNode.setSiblingIndex(this.node.children.length - 1);
             }
+            if (this.musicButtonNode && this.musicButtonNode.isValid) {
+                this.musicButtonNode.setSiblingIndex(this.node.children.length - 1);
+            }
             if (this.resourceDeltaContainer && this.resourceDeltaContainer.isValid) {
                 this.resourceDeltaContainer.setSiblingIndex(this.node.children.length - 1);
             }
@@ -117,7 +128,22 @@ export class GameView extends Component {
         // 【核心修复】：使用 targetOff(this) 一次性清理所有以 this 为 target 注册的事件监听，
         // 防止切换场景时 eventTarget 已失效导致 `_off of null` 报错
         if (NetworkManager.instance && NetworkManager.instance.eventTarget) {
-            NetworkManager.instance.eventTarget.targetOff(this);
+            NetworkManager.instance.eventTarget.off('gameStateUpdate', this.onStateChanged, this);
+            NetworkManager.instance.eventTarget.off('playerResourceUpdate', this.onStateChanged, this);
+            NetworkManager.instance.eventTarget.off('playerResourceDelta', this.onResourceDelta, this);
+            NetworkManager.instance.eventTarget.off('serverGameAction', this.onStateChanged, this);
+            NetworkManager.instance.eventTarget.off('error', this.onError, this);
+            NetworkManager.instance.eventTarget.off('areaSettlementStart', this.onAreaSettlementStart, this);
+            NetworkManager.instance.eventTarget.off('areaWaitingUI', this.onAreaWaitingUI, this);
+            NetworkManager.instance.eventTarget.off('settlementComplete', this.onSettlementComplete, this);
+            NetworkManager.instance.eventTarget.off('battleStart', this.onBattleEvent, this);
+            NetworkManager.instance.eventTarget.off('battleUpdate', this.onBattleEvent, this);
+            NetworkManager.instance.eventTarget.off('battleEnded', this.onBattleEvent, this);
+            NetworkManager.instance.eventTarget.off('gameEnded', this.onGameEnded, this);
+            NetworkManager.instance.eventTarget.off('endgameScoreChoiceRequired', this.onEndgameScoreChoiceRequired, this);
+            NetworkManager.instance.eventTarget.off('ui_view_player_items', this.onViewPlayerItems, this);
+            NetworkManager.instance.eventTarget.off('arenaBettingStart', this.onArenaBettingStart, this);
+            NetworkManager.instance.eventTarget.off('arenaBettingComplete', this.onArenaBettingComplete, this);
         }
     }
 
@@ -133,7 +159,6 @@ export class GameView extends Component {
                 if (widget && widget.enabled) {
                     widget.enabled = false;
                 }
-
                 const topBarTrans = this.topBarNode.getComponent(UITransform);
                 if (topBarTrans) {
                     const targetY = (canvasTrans.height / 2) - (topBarTrans.height * (1 - topBarTrans.anchorY));
@@ -143,39 +168,48 @@ export class GameView extends Component {
                 }
             }
 
-            // ==========================================
-            // 【修改】：计算帮助按钮的正确位置 (放在顶部栏的下方)
-            // ==========================================
+            const titleHeight = 262;
+            const spacing = 15;
+            const buttonTopY = (canvasTrans.height / 2) - titleHeight - spacing;
+
+            // 2. 强行置顶 HelpButton
             if (this.helpButtonNode && this.helpButtonNode.active) {
                 const widget = this.helpButtonNode.getComponent(Widget);
                 if (widget && widget.enabled) {
                     widget.enabled = false;
                 }
-
                 const helpTrans = this.helpButtonNode.getComponent(UITransform);
                 if (helpTrans) {
-                    const titleHeight = 262;  // 你的 Title_sprite 的高度
-                    const spacing = 15;       // 你想要的间隔高度（可随时修改，比如改成 10 或 20）
-
-                    // 按钮顶部边缘的 Y 坐标 = 屏幕最顶部 - 顶部栏高度 - 间隔高度
-                    const buttonTopY = (canvasTrans.height / 2) - titleHeight - spacing;
-
-                    // 根据按钮的锚点，推算出按钮中心点的真实 Y 坐标
                     const targetY = buttonTopY - (helpTrans.height * (1 - helpTrans.anchorY));
-
                     if (Math.abs(this.helpButtonNode.position.y - targetY) > 1) {
                         this.helpButtonNode.setPosition(this.helpButtonNode.position.x, targetY, this.helpButtonNode.position.z);
+                    }
+                }
+            }
+
+            // 3. 强行置顶 MusicButton（高度和HelpButton一模一样）
+            if (this.musicButtonNode && this.musicButtonNode.active) {
+                const widget = this.musicButtonNode.getComponent(Widget);
+                if (widget && widget.enabled) {
+                    widget.enabled = false;
+                }
+                const musicTrans = this.musicButtonNode.getComponent(UITransform);
+                if (musicTrans) {
+                    const targetY = buttonTopY - (musicTrans.height * (1 - musicTrans.anchorY));
+                    if (Math.abs(this.musicButtonNode.position.y - targetY) > 1) {
+                        this.musicButtonNode.setPosition(this.musicButtonNode.position.x, targetY, this.musicButtonNode.position.z);
                     }
                 }
             }
         }
 
         // ==========================================
-        // 弹窗与组件显隐逻辑（保留原有功能）
+        // 弹窗与组件显隐逻辑
         // ==========================================
         if (this.isGameFinished) {
             if (this.topBarNode) this.topBarNode.active = false;
             if (this.helpButtonNode) this.helpButtonNode.active = false;
+            if (this.musicButtonNode) this.musicButtonNode.active = false;
             return;
         }
 
@@ -205,6 +239,30 @@ export class GameView extends Component {
         }
         if (this.helpButtonNode && this.helpButtonNode.active !== targetActive) {
             this.helpButtonNode.active = targetActive;
+        }
+        if (this.musicButtonNode && this.musicButtonNode.active !== targetActive) {
+            this.musicButtonNode.active = targetActive;
+        }
+    }
+
+    // ==========================================
+    // 音乐按钮点击事件
+    // ==========================================
+    public onBtnMusicClicked() {
+        if (!this.bgmSource || !this.musicButtonNode) return;
+
+        const sprite = this.musicButtonNode.getComponent(Sprite);
+
+        if (this.bgmSource.playing) {
+            this.bgmSource.pause();
+            if (sprite && this.musicOffSprite) {
+                sprite.spriteFrame = this.musicOffSprite;
+            }
+        } else {
+            this.bgmSource.play();
+            if (sprite && this.musicOnSprite) {
+                sprite.spriteFrame = this.musicOnSprite;
+            }
         }
     }
 
@@ -276,17 +334,9 @@ export class GameView extends Component {
         if (this.isGameFinished) return;
         this.isGameFinished = true;
 
-        if (this.topBarNode) {
-            this.topBarNode.active = false;
-        } else {
-            if (this.stageLabel) this.stageLabel.node.active = false;
-            if (this.phaseLabel) this.phaseLabel.node.active = false;
-            if (this.roundLabel) this.roundLabel.node.active = false;
-        }
-
-        if (this.helpButtonNode) {
-            this.helpButtonNode.active = false;
-        }
+        if (this.topBarNode) this.topBarNode.active = false;
+        if (this.helpButtonNode) this.helpButtonNode.active = false;
+        if (this.musicButtonNode) this.musicButtonNode.active = false;
 
         if (this.currentPopupNode && this.currentPopupNode.isValid) {
             this.currentPopupNode.destroy();

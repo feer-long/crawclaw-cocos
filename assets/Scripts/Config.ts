@@ -3,7 +3,9 @@ function isIP(host: string): boolean {
 }
 
 // const API_HOST = "121.4.62.126";
-const API_HOST = "127.0.0.1:3100";
+// const API_HOST = "crawclaw-257976-11-1318258869.sh.run.tcloudbase.com";
+const API_HOST = "shanhaiji.fun";
+// const API_HOST = "127.0.0.1:3100";
 const wsProto = isIP(API_HOST) ? "ws" : "wss";
 const httpProto = isIP(API_HOST) ? "http" : "https";
 

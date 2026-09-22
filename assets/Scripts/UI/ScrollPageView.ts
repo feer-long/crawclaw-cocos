@@ -146,7 +146,18 @@ export class ScrollPageView extends Component {
     }
 
     onDestroy() {
-        this.scrollView.node.off('scrolling', this.onScrolling, this);
-        this.scrollView.node.off('scroll-ended', this.onScrollEnd, this);
+        // 【修复】：增加安全检查，防止 scrollView 为空时访问 .node 导致报错
+        if (this.scrollView && this.scrollView.node) {
+            this.scrollView.node.off('scrolling', this.onScrolling, this);
+            this.scrollView.node.off('scroll-ended', this.onScrollEnd, this);
+        }
+        // 同时解绑所有 Tab 按钮的触摸事件
+        if (this.tabButtons) {
+            this.tabButtons.forEach((btn) => {
+                if (btn && btn.isValid) {
+                    btn.off(Node.EventType.TOUCH_END);
+                }
+            });
+        }
     }
 }
